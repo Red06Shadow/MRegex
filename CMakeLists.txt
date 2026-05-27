@@ -10,7 +10,7 @@ project(regex)
 
 add_executable(regex 
 ${CMAKE_SOURCE_DIR}/src/main.cpp
-${CMAKE_SOURCE_DIR}/src/libs/_regex.cpp
+${CMAKE_SOURCE_DIR}/src/libs/mregex.cpp
 ${CMAKE_SOURCE_DIR}/src/libs/nfa.cpp
 ${CMAKE_SOURCE_DIR}/src/libs/dfa.cpp
 )
