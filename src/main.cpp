@@ -6,7 +6,7 @@ int main(int argc, char const *argv[])
 {
     _setmode(_fileno(stdout), _O_U16TEXT);
     if (argc < 2)
-        MRegex::build_nfa("a(bc)d").view();
+        MRegex::build_nfa("[a-zA-Z0-9]").view();
     else
         MRegex::build_nfa(argv[1]).view();
     // _regex reg = _regex();
