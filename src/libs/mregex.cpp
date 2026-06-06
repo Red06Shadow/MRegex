@@ -61,6 +61,10 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
         else // si no simplemente se agregan al mismo estado
             for (auto &&transition : _T_qAtr.second)
                 nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(_T_qAtr.first);
+        // if (!isGroup)
+        //     for (auto &&transition : _T_qAtr.second)
+        //         nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
+        // nfa.Q_transitions[{nfa.Q_nfa.size(), -1ULL}].push_back(_T_qAtr.first);
         // luego se agrega la trasicion de la opcionalidad
         nfa.Q_transitions[{_T_qAtr.first, -1ULL}].push_back(nfa.Q_nfa.size());
         break;
@@ -70,27 +74,31 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
         // Si se cumple se agrega la repeticion de cero a multiples veces
         range.next();
         // Si es un grupo las transiciones de repeticion se realizan desde el final hasta el principio
-        if (isGroup)
+        // if (isGroup)
+        //     for (auto &&transition : _T_qAtr.second)
+        //         nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(_T_qAtr.first);
+        // else // si no
+        // {
+        //     for (auto &&transition : _T_qAtr.second)
+        //     {
+        //         // se agregan las transiciones hasta el estado de 'aceptacion' del repetidor ( para que se cumpla una vez )
+        //         nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
+        //         // Y luego la repitencia sobre ese estado
+        //         nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(nfa.Q_nfa.size());
+        //     }
+        // }
+        if (!isGroup)
             for (auto &&transition : _T_qAtr.second)
-                nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(_T_qAtr.first);
-        else // si no
-        {
-            for (auto &&transition : _T_qAtr.second)
-            {
-                // se agregan las transiciones hasta el estado de 'aceptacion' del repetidor ( para que se cumpla una vez )
                 nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
-                // Y luego la repitencia sobre ese estado
-                nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(nfa.Q_nfa.size());
-            }
-        }
+        nfa.Q_transitions[{nfa.Q_nfa.size(), -1ULL}].push_back(_T_qAtr.first);
         break;
     }
     default:
     labelForEnd:
         // Por ultimo en caso de no cumplirse los casos anteriores o la condicion de final de cadena
-        if (isGroup) // si es grupo no se agregan dichas transiciones
+        if (isGroup) // si es un grupo, no se agregan dichas transiciones
             break;
-        // Pero si no se agregan las transiciones del estado
+        // Pero si no, se agregan las transiciones del estado
         for (auto &&transition : _T_qAtr.second)
             nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
         break;
@@ -274,11 +282,116 @@ MRegex::_T_nfa_return_transitions MRegex::_S_build_nfa_parser_or_expresions(_C_S
     return {q0, {-1ULL}};
 }
 
-// static NFA build_Nfa(const std::initializer_list<std::string> &list)
-NFA MRegex::build_nfa(const std::string &str)
+NFA MRegex::build_nfa(const std::__cxx11::basic_string<char> &str)
 {
     _C_String_Iterators<char> range = str;
     NFA nfa;
     nfa.begin_Q_nfa.push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
     return nfa;
+}
+
+NFA MRegex::build_nfa(const std::initializer_list<std::__cxx11::basic_string<char>> &list)
+{
+    NFA nfa;
+    nfa.Q_nfa.push_back(0);
+    nfa.begin_Q_nfa.push_back(0);
+    for (auto &&expresion : list)
+    {
+        _C_String_Iterators<char> range = expresion;
+        nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
+    }
+    return nfa;
+}
+
+NFA MRegex::build_nfa(const char *argv[], size_t size)
+{
+    NFA nfa;
+    nfa.Q_nfa.push_back(0);
+    nfa.begin_Q_nfa.push_back(0);
+    for (size_t i = 1; i < size; i++)
+    {
+        _C_String_Iterators<char> range = std::string(argv[i]);
+        nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
+    }
+    return nfa;
+}
+
+DFA::States MRegex::elipson_cloursers(DFA::States states, const NFA &nfa)
+{
+    std::stack<size_t> stack_status;
+    DFA::States clourser = states;
+    for (auto &&state : states)
+        stack_status.push(state);
+    while (!stack_status.empty())
+    {
+        size_t index = stack_status.top();
+        stack_status.pop();
+        NFA::Transitions::const_iterator iterator = nfa.Q_transitions.begin();
+        if ((iterator = nfa.Q_transitions.find({index, -1ULL})) == nfa.Q_transitions.end())
+            continue;
+        for (auto &&state : iterator->second)
+        {
+            stack_status.push(state);
+            clourser.insert(state);
+        }
+    }
+    return clourser;
+}
+
+DFA::States MRegex::move(DFA::States states, char a, const NFA &nfa)
+{
+    DFA::States result = {};
+    for (auto &&state : states)
+    {
+        NFA::Transitions::const_iterator iterator = nfa.Q_transitions.begin();
+        if ((iterator = nfa.Q_transitions.find({state, a})) != nfa.Q_transitions.end())
+            result.insert(iterator->second[0]);
+    }
+    return result;
+}
+
+DFA MRegex::convert_nfa_to_dfa(const NFA &nfa)
+{
+    DFA dfa = DFA();
+    DFA::States q0 = MRegex::elipson_cloursers({0}, nfa);
+    std::map<DFA::States, size_t> status_map = {{q0, 0}};
+    std::queue<DFA::States> queue_status;
+    queue_status.push(q0);
+    dfa.begin_Q_dfa.insert(0);
+    dfa.dictionary = nfa.dictionary;
+    dfa.Q_dfa.push_back(q0);
+
+    while (!queue_status.empty())
+    {
+        DFA::States index = queue_status.front();
+        queue_status.pop();
+        size_t actual = status_map[index];
+
+        for (auto &&state : index)
+        {
+            if (nfa.F_nfa.count(state) > 0)
+            {
+                dfa.F_dfa.insert(actual);
+                break;
+            }
+        }
+
+        for (auto &&caraceter : nfa.dictionary)
+        {
+            DFA::States newindex = MRegex::move_elipson_cloursers(index, caraceter, nfa);
+            if (newindex.empty())
+                continue;
+            if (status_map.count(newindex) < 1)
+            {
+                status_map[newindex] = dfa.Q_dfa.size();
+                dfa.Q_dfa.push_back(newindex);
+                queue_status.push(newindex);
+            }
+            dfa.Q_transitions[{actual, caraceter}] = status_map[newindex];
+        }
+    }
+
+    
+
+    return dfa;
 }

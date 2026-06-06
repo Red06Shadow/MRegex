@@ -3,41 +3,46 @@
 
 void DFA::view()
 {
-    std::cout << "Qdfa " << '[';
-    for (size_t i = 0; i < Q_dfa.size(); i++)
-    {
-        std::cout << std::endl
-                  << i << ": { ";
-        for (auto &&j : Q_dfa[i])
-        {
-            if (j == -1ULL)
-                std::cout << 'A' << ' ';
-            else
-                std::cout << j << ' ';
-        }
-        std::cout << '}';
-    }
-    std::cout << std::endl
-              << ']' << std::endl
-              << "Transitions: " << '{' << std::endl;
+    std::wcout << L"Estados (Q_dfa) [ ";
 
-    for (auto &&[key, value] : delta_dfa)
+    for (size_t state = 0; state < Q_dfa.size(); state++)
     {
-        std::cout << '{' << key.first << ", " << key.second << '}' << " -> { ";
-        if (value.first == -1ULL)
-            std::cout << 'A';
+        std::wcout << std::endl
+                  << state << L": { ";
+        for (auto &&nextstate : Q_dfa[state])
+            std::wcout << nextstate << L' ';
+        std::wcout << L'}';
+    }
+
+    std::wcout << std::endl << L"]" << std::endl
+               << "Diccionario (dictionary): { ";
+
+    for (auto &&letter : dictionary)
+        std::wcout << letter << L' ';
+
+    std::wcout << L'}' << std::endl
+               << L"Transiciones (Q_transitions): " << std::endl
+               << L'{' << std::endl;
+    for (auto &&[key, state] : Q_transitions)
+    {
+        std::wcout << L"    {" << key.first << L", ";
+        if (key.second == -1ULL)
+            std::wcout << wchar_t(0x025d); // L'∊';
         else
-            std::cout << value.first << " :: [ " << (long long)(value.second.min) << ", " << (long long)(value.second.max) << " ] }" << std::endl;
+            std::wcout << wchar_t(key.second);
+        std::wcout << L"} -> { " << state << L' ' << L'}' << std::endl;
     }
-    std::cout << '}' << std::endl;
+    std::wcout << L'}' << std::endl
+               << L"Estados de Inicio (begin_Q_dfa): { ";
 
-    std::cout << "Begin State: { ";
-    for (auto &&i : _M_begins_states)
-        std::cout << i << ' ';
-    std::cout << "}" << std::endl;
+    for (auto &&state : begin_Q_dfa)
+        std::wcout << state << L' ';
 
-    std::cout << "Fdfa: " << "{ ";
-    for (auto &&i : F_dfa)
-        std::cout << i << ' ';
-    std::cout << '}' << std::endl;
+    std::wcout << L"}" << std::endl
+               << L"Estados de aceptacion (F_dfa): { ";
+
+    for (auto &&state : F_dfa)
+        std::wcout << state << L' ';
+
+    std::wcout << L'}' << std::endl;
 }

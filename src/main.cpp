@@ -5,10 +5,15 @@
 int main(int argc, char const *argv[])
 {
     _setmode(_fileno(stdout), _O_U16TEXT);
-    if (argc < 2)
-        MRegex::build_nfa("[a-zA-Z0-9]").view();
-    else
-        MRegex::build_nfa(argv[1]).view();
+    NFA nfa;
+    nfa = MRegex::build_nfa(argv, argc);
+    nfa.view();
+    std::wcout << std::endl;
+    MRegex::convert_nfa_to_dfa(nfa).view();
+
+    
+
+    
     // _regex reg = _regex();
     // NFA nfa = _regex::build_NFA({
     //     // {1, "a+b?"}
