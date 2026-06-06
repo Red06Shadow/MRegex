@@ -61,11 +61,6 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
         else // si no simplemente se agregan al mismo estado
             for (auto &&transition : _T_qAtr.second)
                 nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(_T_qAtr.first);
-        // if (!isGroup)
-        //     for (auto &&transition : _T_qAtr.second)
-        //         nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
-        // nfa.Q_transitions[{nfa.Q_nfa.size(), -1ULL}].push_back(_T_qAtr.first);
-        // luego se agrega la trasicion de la opcionalidad
         nfa.Q_transitions[{_T_qAtr.first, -1ULL}].push_back(nfa.Q_nfa.size());
         break;
     }
@@ -73,20 +68,6 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
     {
         // Si se cumple se agrega la repeticion de cero a multiples veces
         range.next();
-        // Si es un grupo las transiciones de repeticion se realizan desde el final hasta el principio
-        // if (isGroup)
-        //     for (auto &&transition : _T_qAtr.second)
-        //         nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(_T_qAtr.first);
-        // else // si no
-        // {
-        //     for (auto &&transition : _T_qAtr.second)
-        //     {
-        //         // se agregan las transiciones hasta el estado de 'aceptacion' del repetidor ( para que se cumpla una vez )
-        //         nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
-        //         // Y luego la repitencia sobre ese estado
-        //         nfa.Q_transitions[{nfa.Q_nfa.size(), transition}].push_back(nfa.Q_nfa.size());
-        //     }
-        // }
         if (!isGroup)
             for (auto &&transition : _T_qAtr.second)
                 nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
@@ -391,7 +372,7 @@ DFA MRegex::convert_nfa_to_dfa(const NFA &nfa)
         }
     }
 
-    
+
 
     return dfa;
 }
