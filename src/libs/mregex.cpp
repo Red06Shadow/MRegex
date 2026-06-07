@@ -2,6 +2,7 @@
 #include <stack>
 #include <queue>
 #include <unordered_set>
+#include <math.h>
 
 char MRegex::_S_scape_code_caracter(_C_String_Iterators<char> &range)
 {
@@ -371,8 +372,23 @@ DFA MRegex::convert_nfa_to_dfa(const NFA &nfa)
             dfa.Q_transitions[{actual, caraceter}] = status_map[newindex];
         }
     }
-
-
-
     return dfa;
 }
+
+TableDFA MRegex::convert_dfa_to_table(const DFA &dfa)
+{
+    size_t sizeAlphabet = std::pow(256, sizeof(char));
+    TableDFA table = TableDFA(dfa.Q_dfa.size(), sizeAlphabet, dfa.F_dfa);
+    for (size_t state = 0; state < dfa.Q_dfa.size(); state++)
+    {
+        for (size_t letter = 0; letter < sizeAlphabet; letter++)
+        {
+            auto transition = dfa.Q_transitions.find({state, char(letter)});
+            if (transition != dfa.Q_transitions.end())
+                table.Q_transitions[state][letter] = transition->second;
+        }
+    }
+    return table;
+}
+
+// Agregar Metaprogramacion para que los captions sean de maximal-munch o de verificacion

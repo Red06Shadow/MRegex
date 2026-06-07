@@ -13,4 +13,5 @@ ${CMAKE_SOURCE_DIR}/src/main.cpp
 ${CMAKE_SOURCE_DIR}/src/libs/mregex.cpp
 ${CMAKE_SOURCE_DIR}/src/libs/nfa.cpp
 ${CMAKE_SOURCE_DIR}/src/libs/dfa.cpp
+${CMAKE_SOURCE_DIR}/src/libs/table.cpp
 )

@@ -38,7 +38,7 @@ public:
 
 public:
     NFA() : Q_nfa(), begin_Q_nfa(), Q_transitions(), dictionary(), F_nfa() {}
-    inline void view()
+    inline void view() const
     {
         std::wcout << L"Estados (Q_nfa) [ ";
         for (size_t i = 0; i < Q_nfa.size(); i++)

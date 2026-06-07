@@ -1,7 +1,7 @@
 #include <dfa.hpp>
 #include <iostream>
 
-void DFA::view()
+void DFA::view() const
 {
     std::wcout << L"Estados (Q_dfa) [ ";
 

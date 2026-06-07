@@ -31,7 +31,7 @@ private:
 
 public:
     DFA() : Q_dfa(), Q_transitions({}), dictionary({}), F_dfa({}), begin_Q_dfa({}) {}
-    void view();
+    void view() const;
     ~DFA() {}
     friend MRegex;
 };
