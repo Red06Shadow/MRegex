@@ -29,6 +29,48 @@ char MRegex::_S_scape_code_caracter(_C_String_Iterators<char> &range)
     }
 }
 
+std::pair<size_t, size_t> MRegex::_S_parser_cualifiquer_range(_C_String_Iterators<char> &range)
+{
+    size_t n1 = 0;    // minimo
+    size_t n2 = 0;    // maximo
+    size_t *rn = &n1; // puntero al numero actual
+    char caracter;
+    bool invalid = true; // Determina si es valido el resultado
+    // Recorremos la cadena de caracteres
+    while (range.peak() < range.end() and (caracter = *range.peak()) != '}')
+    {
+        // Si es un numero
+        if ('0' <= caracter && caracter <= '9')
+        {
+            // Realizamos los calculos para la conversion
+            *rn = *rn * 10 + caracter - '0';
+            // Y desactivamos la invalidacion
+            invalid = false;
+        }
+        else if (',' == caracter) // Si es una coma
+        {
+            // Y el rn apunta a el numero 2(maximo)
+            if (rn == &n2)
+                throw std::runtime_error("Error: Invalid subdivision"); // Lanzamos excepcion
+            // Cambiamos el puntero de n1(minimo) a n2(maximo)
+            rn = &n2;
+            // Y activamos la invalidacion
+            invalid = true;
+        }
+        else // Si no solo se emite el error de caracter invalido
+            throw std::runtime_error("Error: Invalid caracter inserted");
+        range.next(); // Y por ultimo pasamos al siguiente
+    }
+    if (range.peak() == range.end()) // Si no se llego al final del cualificador, emitir error
+        throw std::runtime_error("Error: Unespect termination of range");
+    if (invalid) // si es invalida, emitir tambien un error
+        throw std::runtime_error("Error: Invalid format inserted");
+    if (rn == &n1) // si el puntero permanece en n1(minimo), significa que el rango es {n1, n1} minimo igual a maximo
+        n2 = n1;
+    // Retornar el par de numeros
+    return {n1, n2};
+}
+
 void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, const MRegex::_T_nfa_return_transitions &_T_qAtr, bool isGroup)
 {
     char c = 0;
@@ -75,11 +117,66 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
         nfa.Q_transitions[{nfa.Q_nfa.size(), -1ULL}].push_back(_T_qAtr.first);
         break;
     }
+    case '{':
+    {
+        range.next();
+        std::pair<size_t, size_t> cualifiquer_range = MRegex::_S_parser_cualifiquer_range(range);
+        range.next();
+        if (isGroup)
+        {
+            size_t n_state = nfa.Q_nfa.size() - _T_qAtr.first;
+            std::vector<size_t> optionals_groups = {};
+            if (cualifiquer_range.first == 0)
+                optionals_groups.push_back(_T_qAtr.first);
+            for (size_t state = 1; state < cualifiquer_range.second; state++)
+            {
+                size_t state_group_begin = nfa.Q_nfa.size();
+                if (cualifiquer_range.first <= state && state < cualifiquer_range.second)
+                    // Agregar una trasicion de opcionalidad
+                    optionals_groups.push_back(state_group_begin);
+                for (size_t state_group = 0; state_group < n_state; state_group++)
+                {
+                    nfa.Q_nfa.push_back(nfa.Q_nfa.size());
+                    for (auto &&[key, value] : nfa.Q_transitions)
+                    {
+                        if (key.first != _T_qAtr.first + state_group)
+                            continue;
+                        nfa.Q_transitions[{state_group_begin + state_group, key.second}].push_back(nfa.Q_nfa.size());
+                    }
+                }
+            }
+            for (auto &&state : optionals_groups)
+                nfa.Q_transitions[{state, -1ULL}].push_back(nfa.Q_nfa.size());
+        }
+        else // si no simplemente se agregan al mismo estado
+        {
+            size_t state_iterator = _T_qAtr.first;
+            for (size_t state = 0; state < cualifiquer_range.second; state++)
+            {
+                // Si el estado actual esta entre el minimo y el maximo
+                if (cualifiquer_range.first <= state && state < cualifiquer_range.second)
+                    // Agregar una trasicion de opcionalidad
+                    nfa.Q_transitions[{state_iterator, -1ULL}].push_back(_T_qAtr.first + cualifiquer_range.second);
+                // Y luego se agregan todas las transiciones desde el estado actual hasta el proximo estado
+                for (auto &&transition : _T_qAtr.second)
+                    nfa.Q_transitions[{state_iterator, transition}].push_back(nfa.Q_nfa.size());
+                // por ultimo se guarda el nuevo estado
+                state_iterator = nfa.Q_nfa.size();
+                // Y si el rango es menor que el maximo - 1 se agrega el nuevo estado generado
+                if (state < cualifiquer_range.second - 1ULL)
+                    nfa.Q_nfa.push_back(state_iterator);
+            }
+        }
+        break;
+    }
     default:
     labelForEnd:
         // Por ultimo en caso de no cumplirse los casos anteriores o la condicion de final de cadena
         if (isGroup) // si es un grupo, no se agregan dichas transiciones
+        {
+            std::wcout << _T_qAtr.first << " " << nfa.Q_nfa.size() << std::endl;
             break;
+        }
         // Pero si no, se agregan las transiciones del estado
         for (auto &&transition : _T_qAtr.second)
             nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
@@ -390,5 +487,3 @@ TableDFA MRegex::convert_dfa_to_table(const DFA &dfa)
     }
     return table;
 }
-
-// Agregar Metaprogramacion para que los captions sean de maximal-munch o de verificacion

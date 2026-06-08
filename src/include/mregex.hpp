@@ -25,7 +25,9 @@ private: // Funtions
     static _T_nfa_return_transitions _S_parser_nfa_parser_class_expresions(_C_String_Iterators<char> &, NFA &);
     static size_t _S_build_nfa_parser_regular_expresions_basic(_C_String_Iterators<char> &, NFA &, bool);
     static _T_nfa_return_transitions _S_build_nfa_parser_or_expresions(_C_String_Iterators<char> &, NFA &, bool);
+    static std::pair<size_t, size_t> _S_parser_cualifiquer_range(_C_String_Iterators<char> &);
 
+private: // Funtions
     // Funciones adicionales del convertidor de NFA a DFA
     static DFA::States elipson_cloursers(DFA::States, const NFA &);
     static DFA::States move(DFA::States, char, const NFA &);
@@ -60,8 +62,6 @@ public: // Funtions
     template <Selector S, typename T>
     static std::pair<const char *, const char *> caption(const std::__cxx11::basic_string<char> &str, const T &stru);
 
-    // template <Selector T>
-    // static std::pair<const char *, const char *> caption(const std::__cxx11::basic_string<char> &str, const TableDFA &table);
 };
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
