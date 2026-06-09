@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <math.h>
 
-char MRegex::_S_scape_code_caracter(_C_String_Iterators<char> &range)
+char MRegex::_S_scape_code_caracter(basic_string_range<char> &range)
 {
     char c;
     if (range.peak() >= range.end())
@@ -29,7 +29,7 @@ char MRegex::_S_scape_code_caracter(_C_String_Iterators<char> &range)
     }
 }
 
-std::pair<size_t, size_t> MRegex::_S_parser_cualifiquer_range(_C_String_Iterators<char> &range)
+MRegex::range_cualifiquer MRegex::_S_parser_cualifiquer_range(basic_string_range<char> &range)
 {
     size_t n1 = 0;    // minimo
     size_t n2 = 0;    // maximo
@@ -71,7 +71,7 @@ std::pair<size_t, size_t> MRegex::_S_parser_cualifiquer_range(_C_String_Iterator
     return {n1, n2};
 }
 
-void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, const MRegex::_T_nfa_return_transitions &_T_qAtr, bool isGroup)
+void MRegex::_S_parser_cualifiquer(basic_string_range<char> &range, NFA &nfa, const MRegex::pair_begin_state_transitions &_T_qAtr, bool isGroup)
 {
     char c = 0;
     // Si el rango llega al final salta a la sentemcia por defecto del switch
@@ -120,7 +120,7 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
     case '{':
     {
         range.next();
-        std::pair<size_t, size_t> cualifiquer_range = MRegex::_S_parser_cualifiquer_range(range);
+        range_cualifiquer cualifiquer_range = MRegex::_S_parser_cualifiquer_range(range);
         range.next();
         if (isGroup)
         {
@@ -173,10 +173,7 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
     labelForEnd:
         // Por ultimo en caso de no cumplirse los casos anteriores o la condicion de final de cadena
         if (isGroup) // si es un grupo, no se agregan dichas transiciones
-        {
-            std::wcout << _T_qAtr.first << " " << nfa.Q_nfa.size() << std::endl;
             break;
-        }
         // Pero si no, se agregan las transiciones del estado
         for (auto &&transition : _T_qAtr.second)
             nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
@@ -184,7 +181,7 @@ void MRegex::_S_parser_cualifiquer(_C_String_Iterators<char> &range, NFA &nfa, c
     }
 }
 
-MRegex::_T_nfa_return_transitions MRegex::_S_parser_nfa_parser_class_expresions(_C_String_Iterators<char> &range, NFA &nfa)
+MRegex::pair_begin_state_transitions MRegex::_S_parser_nfa_parser_class_expresions(basic_string_range<char> &range, NFA &nfa)
 {
     size_t qA = nfa.Q_nfa.size();
     std::vector<size_t> transitions = {};
@@ -260,13 +257,13 @@ MRegex::_T_nfa_return_transitions MRegex::_S_parser_nfa_parser_class_expresions(
     return {qA, transitions};
 }
 
-size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(_C_String_Iterators<char> &range, NFA &nfa, bool isGroup)
+size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<char> &range, NFA &nfa, bool isGroup)
 {
     // Dado el rango de caracteres
     while (range.peak() < range.end())
     {
         // Obtenemos el caracter actual
-        MRegex::_T_nfa_return_transitions _T_qAtr;
+        MRegex::pair_begin_state_transitions _T_qAtr;
         char c = *range.peak();
         if (c == '|' or c == ')')
             break;
@@ -323,7 +320,7 @@ size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(_C_String_Iterators<
     return qEnd;
 }
 
-MRegex::_T_nfa_return_transitions MRegex::_S_build_nfa_parser_or_expresions(_C_String_Iterators<char> &range, NFA &nfa, bool isGroup)
+MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(basic_string_range<char> &range, NFA &nfa, bool isGroup)
 {
     // Preguntamos si el inicio es incorrect y lanzamos un error si es asi
     if (range.peak() == range.end() or *(range.peak()) == '|')
@@ -363,7 +360,7 @@ MRegex::_T_nfa_return_transitions MRegex::_S_build_nfa_parser_or_expresions(_C_S
 
 NFA MRegex::build_nfa(const std::__cxx11::basic_string<char> &str)
 {
-    _C_String_Iterators<char> range = str;
+    basic_string_range<char> range = str;
     NFA nfa;
     nfa.begin_Q_nfa.push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
     return nfa;
@@ -376,7 +373,7 @@ NFA MRegex::build_nfa(const std::initializer_list<std::__cxx11::basic_string<cha
     nfa.begin_Q_nfa.push_back(0);
     for (auto &&expresion : list)
     {
-        _C_String_Iterators<char> range = expresion;
+        basic_string_range<char> range = expresion;
         nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
     }
     return nfa;
@@ -389,7 +386,7 @@ NFA MRegex::build_nfa(const char *argv[], size_t size)
     nfa.begin_Q_nfa.push_back(0);
     for (size_t i = 1; i < size; i++)
     {
-        _C_String_Iterators<char> range = std::string(argv[i]);
+        basic_string_range<char> range = std::string(argv[i]);
         nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
     }
     return nfa;

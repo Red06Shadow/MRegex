@@ -9,23 +9,23 @@
 class MRegex
 {
 public: // enums, structs
-    using _T_nfa_return_transitions = std::pair<size_t, std::vector<size_t>>;
-
     enum Selector : unsigned char
     {
         _first_sequence,
         _verification,
         _maximun_munch
     };
-
+private:  // enums, structs
+    using pair_begin_state_transitions = std::pair<size_t, std::vector<size_t>>;
+    using range_cualifiquer = std::pair<size_t, size_t>;
 private: // Funtions
     // Funciones para el parseo de expresiones regex a NFA
-    static char _S_scape_code_caracter(_C_String_Iterators<char> &);
-    static void _S_parser_cualifiquer(_C_String_Iterators<char> &, NFA &, const _T_nfa_return_transitions &, bool);
-    static _T_nfa_return_transitions _S_parser_nfa_parser_class_expresions(_C_String_Iterators<char> &, NFA &);
-    static size_t _S_build_nfa_parser_regular_expresions_basic(_C_String_Iterators<char> &, NFA &, bool);
-    static _T_nfa_return_transitions _S_build_nfa_parser_or_expresions(_C_String_Iterators<char> &, NFA &, bool);
-    static std::pair<size_t, size_t> _S_parser_cualifiquer_range(_C_String_Iterators<char> &);
+    static char _S_scape_code_caracter(basic_string_range<char> &);
+    static void _S_parser_cualifiquer(basic_string_range<char> &, NFA &, const pair_begin_state_transitions &, bool);
+    static pair_begin_state_transitions _S_parser_nfa_parser_class_expresions(basic_string_range<char> &, NFA &);
+    static size_t _S_build_nfa_parser_regular_expresions_basic(basic_string_range<char> &, NFA &, bool);
+    static pair_begin_state_transitions _S_build_nfa_parser_or_expresions(basic_string_range<char> &, NFA &, bool);
+    static range_cualifiquer _S_parser_cualifiquer_range(basic_string_range<char> &);
 
 private: // Funtions
     // Funciones adicionales del convertidor de NFA a DFA
@@ -60,8 +60,9 @@ public: // Funtions
     /// @param dfa DFA generado
     /// @return Retorna los iteradores de la cadena
     template <Selector S, typename T>
-    static std::pair<const char *, const char *> caption(const std::__cxx11::basic_string<char> &str, const T &stru);
-
+    static std::pair<const char *, size_t> caption(const std::__cxx11::basic_string<char> &str, const T &stru);
+    template <Selector S, typename T>
+    static std::pair<const char *, size_t> caption(basic_string_range<char> &range, const T &stru);
 };
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -70,27 +71,18 @@ public: // Funtions
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <MRegex::Selector S, typename T>
-std::pair<const char *, const char *> MRegex::caption(const std::__cxx11::basic_string<char> &str, const T &stru)
+std::pair<const char *, size_t> MRegex::caption(const std::__cxx11::basic_string<char> &str, const T &stru)
 {
     size_t state = 0;
     size_t acept_state = -1ULL;
-    std::string::const_iterator iterator_end = str.begin();
+    std::__cxx11::basic_string<char>::const_iterator end = str.begin();
 
     if constexpr (!std::is_same_v<T, DFA> && !std::is_same_v<T, TableDFA>)
         throw std::runtime_error("");
 
-    for (std::string::const_iterator iterator_caption = str.begin(); iterator_caption < str.end(); iterator_caption++)
+    for (std::__cxx11::basic_string<char>::const_iterator iterator_caption = str.begin(); iterator_caption < str.end(); iterator_caption++)
     {
         char letter = *iterator_caption;
-
-        if constexpr (S == MRegex::Selector::_maximun_munch || S == MRegex::Selector::_first_sequence)
-        {
-            if (stru.F_dfa.count(state) > 0)
-                acept_state = state;
-            if constexpr (S == MRegex::Selector::_first_sequence)
-                break;
-        }
-
         if constexpr (std::is_same_v<T, DFA>)
         {
             auto transition = stru.Q_transitions.find({state, letter});
@@ -105,15 +97,77 @@ std::pair<const char *, const char *> MRegex::caption(const std::__cxx11::basic_
                 break; // No hay transición, rechazar
             state = next_state;
         }
-
-        iterator_end++;
+        if constexpr (S == MRegex::Selector::_maximun_munch || S == MRegex::Selector::_first_sequence)
+        {
+            if (state == acept_state)
+                end = iterator_caption + 1;
+            else if (stru.F_dfa.count(state) > 0)
+            {
+                end = iterator_caption + 1;
+                acept_state = state;
+            }
+            if constexpr (S == MRegex::Selector::_first_sequence)
+                break;
+        }
     }
     if constexpr (S == MRegex::Selector::_maximun_munch)
-        return {str.begin().base(), acept_state != -1ULL ? iterator_end.base() : nullptr};
+        return {acept_state != -1ULL ? end.base() : nullptr, 0};
     else if constexpr (S == MRegex::Selector::_first_sequence)
-        return {str.begin().base(), stru.F_dfa.count(state) > 0 ? iterator_end.base() : nullptr};
+        return {stru.F_dfa.count(state) > 0 ? end.base() : nullptr, 0};
     else
-        return {str.begin().base(), (iterator_end == str.end() && stru.F_dfa.count(state) > 0) ? iterator_end.base() : nullptr};
+        return {(end == str.end() && stru.F_dfa.count(state) > 0) ? end.base() : nullptr, 0};
+}
+
+
+template <MRegex::Selector S, typename T>
+std::pair<const char *, size_t> MRegex::caption(basic_string_range<char> &range, const T &stru)
+{
+    size_t state = 0;
+    size_t acept_state = -1ULL;
+    basic_string_range<char>::iterator end = range.begin();
+
+    if constexpr (!std::is_same_v<T, DFA> && !std::is_same_v<T, TableDFA>)
+        throw std::runtime_error("");
+    char letter;
+    while (range.peak() < range.end())
+    {
+        letter = *range.peak();
+        // Code
+        if constexpr (std::is_same_v<T, DFA>)
+        {
+            auto transition = stru.Q_transitions.find({state, letter});
+            if (transition == stru.Q_transitions.end())
+                break; // No hay transición, rechazar
+            state = transition->second;
+        }
+        else if constexpr (std::is_same_v<T, TableDFA>)
+        {
+            size_t next_state = stru.Q_transitions[state][letter];
+            if (next_state == -1ULL)
+                break; // No hay transición, rechazar
+            state = next_state;
+        }
+        if constexpr (S == MRegex::Selector::_maximun_munch || S == MRegex::Selector::_first_sequence)
+        {
+            if (state == acept_state)
+                end = range.peak() + 1;
+            else if (stru.F_dfa.count(state) > 0)
+            {
+                end = range.peak() + 1;
+                acept_state = state;
+            }
+            if constexpr (S == MRegex::Selector::_first_sequence)
+                break;
+        }
+        // Code
+        range.next();
+    }
+    if constexpr (S == MRegex::Selector::_maximun_munch)
+        return {acept_state != -1ULL ? end.base() : nullptr, 0};
+    else if constexpr (S == MRegex::Selector::_first_sequence)
+        return {stru.F_dfa.count(state) > 0 ? end.base() : nullptr, 0};
+    else
+        return {(end == range.end() && stru.F_dfa.count(state) > 0) ? end.base() : nullptr, 0};
 }
 
 #endif
