@@ -11,7 +11,7 @@ void NFA::view() const
                << "Diccionario (dictionary): { ";
 
     for (auto &&letter : dictionary)
-        std::wcout << letter << L' ';
+        std::wcout << int(letter) << L' ';
 
     std::wcout << L'}' << std::endl
                << L"Transiciones (Q_transitions): " << std::endl
@@ -58,8 +58,8 @@ void NFA::view() const
     std::wcout << L"}" << std::endl
                << L"Estados de aceptacion (F_nfa): { ";
 
-    for (auto &&state : F_nfa)
-        std::wcout << state << L' ';
+    for (auto &&[key, value] : F_nfa)
+        std::wcout << key << ':' << value << std::endl;
 
     std::wcout << L'}' << std::endl;
 }

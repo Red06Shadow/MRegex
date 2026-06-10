@@ -41,8 +41,8 @@ void DFA::view() const
     std::wcout << L"}" << std::endl
                << L"Estados de aceptacion (F_dfa): { ";
 
-    for (auto &&state : F_dfa)
-        std::wcout << state << L' ';
+    for (auto &&[key, value] : F_dfa)
+        std::wcout << key << ':' << value << std::endl;
 
     std::wcout << L'}' << std::endl;
 }

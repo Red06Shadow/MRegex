@@ -2,7 +2,7 @@
 #define _TABLEDFA
 
 #include <corecrt.h>
-#include <set>
+#include <map>
 
 class MRegex;
 
@@ -10,12 +10,13 @@ class TableDFA
 {
 private:
     using _S_Table_Transitions = size_t **;
+    using Fdfa = std::map<size_t, size_t>;
     const size_t Q_dfa, dictionary;
-    std::set<size_t> F_dfa;
+    Fdfa F_dfa;
     _S_Table_Transitions Q_transitions;
     TableDFA() : Q_transitions(nullptr), Q_dfa(0), dictionary(0), F_dfa() {}
-    TableDFA(size_t, size_t, const std::set<size_t>&);
-    TableDFA(size_t, size_t, std::set<size_t>&&);
+    TableDFA(size_t, size_t, const Fdfa&);
+    TableDFA(size_t, size_t, Fdfa&&);
     inline static _S_Table_Transitions build(size_t, size_t);
     inline static void copy(TableDFA&, const TableDFA&);
 public:

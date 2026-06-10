@@ -22,7 +22,7 @@ public:
     using Transitions = std::map<std::pair<size_t, size_t>, std::vector<size_t>>;
 #endif
     using Dictionary = std::set<char>;
-    using Fnfa = std::set<size_t>;
+    using Fnfa = std::map<size_t, size_t>;
 
 public:
     /// @brief Estados
@@ -38,7 +38,7 @@ public:
 
 public:
     NFA() : Q_nfa(), begin_Q_nfa(), Q_transitions(), dictionary(), F_nfa() {}
-    inline void view() const;
+    void view() const;
     ~NFA() {}
 };
 

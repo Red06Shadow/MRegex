@@ -24,11 +24,11 @@ void TableDFA::copy(TableDFA &destine, const TableDFA &sources)
     }
 }
 
-TableDFA::TableDFA(size_t nstates, size_t alphabet_size, const std::set<size_t> &f_dfa) : Q_transitions(TableDFA::build(nstates, alphabet_size)),
+TableDFA::TableDFA(size_t nstates, size_t alphabet_size, const Fdfa &f_dfa) : Q_transitions(TableDFA::build(nstates, alphabet_size)),
                                                                                           Q_dfa(nstates),
                                                                                           dictionary(alphabet_size),
                                                                                           F_dfa(f_dfa) {}
-TableDFA::TableDFA(size_t nstates, size_t alphabet_size, std::set<size_t> &&f_dfa) : Q_transitions(TableDFA::build(nstates, alphabet_size)),
+TableDFA::TableDFA(size_t nstates, size_t alphabet_size, Fdfa &&f_dfa) : Q_transitions(TableDFA::build(nstates, alphabet_size)),
                                                                                      Q_dfa(nstates),
                                                                                      dictionary(alphabet_size),
                                                                                      F_dfa(std::move(f_dfa)) {}
@@ -79,9 +79,17 @@ void TableDFA::view() const
 
     std::wcout << L"Estados de aceptacion (F_dfa): { ";
 
-    for (auto &&state : F_dfa)
-        std::wcout << state << L' ';
+    for (auto &&[key, value] : F_dfa)
+        std::wcout << key << ':' << value << std::endl;
     std::wcout << L'}' << std::endl;
 }
 
-TableDFA::~TableDFA() {}
+TableDFA::~TableDFA() {
+    if (this->Q_transitions != nullptr)
+    {
+        for (size_t state = 0; state < Q_dfa; state++)
+            if(Q_transitions[state] != nullptr) delete[] Q_transitions[state];
+        delete[] Q_transitions;
+        Q_transitions = nullptr;
+    }
+}

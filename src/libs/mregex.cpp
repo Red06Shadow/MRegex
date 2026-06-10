@@ -4,7 +4,24 @@
 #include <unordered_set>
 #include <math.h>
 
-char MRegex::_S_scape_code_caracter(basic_string_range<char> &range)
+char MRegex::_S_parser_code_caracter_octal(basic_string_range<char> &range)
+{
+    char result;
+    for (char i = 0; i < 3; i++)
+    {
+        if (range.peak() >= range.end() && i < 1)
+            throw std::runtime_error("Error: Octal caracter parsing error, end unspect");
+        char caracter = *range.peak();
+        if (caracter >= '0' && caracter <= '7')
+            result = result * 8 + (caracter - '0');
+        else
+            break;
+        range.next();
+    }
+    return result;
+}
+
+char MRegex::_S_parser_code_caracter(basic_string_range<char> &range)
 {
     char c;
     if (range.peak() >= range.end())
@@ -12,18 +29,45 @@ char MRegex::_S_scape_code_caracter(basic_string_range<char> &range)
     switch (c = *range.peak())
     {
     case 'n':
+        range.next();
         return '\n';
         break;
     case 't':
+        range.next();
         return '\t';
         break;
     case 'v':
+        range.next();
         return '\v';
         break;
     case 'f':
+        range.next();
         return '\f';
         break;
+    case 'b':
+        range.next();
+        return '\b';
+        break;
+    case 'r':
+        range.next();
+        return '\r';
+        break;
+    case 'x':
+        range.next();
+        return MRegex::_S_parser_code_caracter_hexunicode<2>(range);
+        break;
+    case 'u':
+        range.next();
+        return MRegex::_S_parser_code_caracter_hexunicode<4>(range);
+        break;
+    case 'U':
+        range.next();
+        return MRegex::_S_parser_code_caracter_hexunicode<8>(range);
+        break;
     default:
+        if ('0' <= c && c <= '7')
+            return MRegex::_S_parser_code_caracter_octal(range);
+        range.next();
         return c;
         break;
     }
@@ -203,7 +247,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_parser_nfa_parser_class_expresio
         if (a == '\\')
         {
             range.next();
-            a = MRegex::_S_scape_code_caracter(range);
+            a = MRegex::_S_parser_code_caracter(range);
         }
         // Si se cumple la siguiente condicion solo se agrgara una transicion
         if (range.offset(1) >= range.end() or *(range.offset(1)) != '-')
@@ -220,7 +264,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_parser_nfa_parser_class_expresio
             if (b == '\\')
             {
                 range.next();
-                b = MRegex::_S_scape_code_caracter(range);
+                b = MRegex::_S_parser_code_caracter(range);
             }
             for (int i = a; i <= b; i++)
                 alphabet.insert(char(i));
@@ -257,7 +301,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_parser_nfa_parser_class_expresio
     return {qA, transitions};
 }
 
-size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<char> &range, NFA &nfa, bool isGroup)
+size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<char> &range, NFA &nfa, bool isGroup, size_t id)
 {
     // Dado el rango de caracteres
     while (range.peak() < range.end())
@@ -275,7 +319,7 @@ size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<c
         case '(':
         {
             // Genera un grupo de reglas, se utiliza la recursion de la fincion recursiva
-            _T_qAtr = MRegex::_S_build_nfa_parser_or_expresions(range, nfa, true);
+            _T_qAtr = MRegex::_S_build_nfa_parser_or_expresions(range, nfa, true, id);
             // Si no termina en la posicion correcta, error
             if (range.peak() >= range.end() or *range.peak() != ')')
                 throw std::runtime_error("Error: Bad termination in group");
@@ -300,8 +344,7 @@ size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<c
         }
         case '\\':
         {
-            c = MRegex::_S_scape_code_caracter(range);
-            range.next();
+            c = MRegex::_S_parser_code_caracter(range);
         }
         default:
         {
@@ -320,7 +363,7 @@ size_t MRegex::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<c
     return qEnd;
 }
 
-MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(basic_string_range<char> &range, NFA &nfa, bool isGroup)
+MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(basic_string_range<char> &range, NFA &nfa, bool isGroup, size_t id)
 {
     // Preguntamos si el inicio es incorrect y lanzamos un error si es asi
     if (range.peak() == range.end() or *(range.peak()) == '|')
@@ -334,7 +377,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(b
     // nfa.Q_transitions[{q0, -1ULL}] = nfa.Q_nfa.size();
     nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
     // Guardamos el estado final del resultado de la cadena
-    ends.push_back(MRegex::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup));
+    ends.push_back(MRegex::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup, id));
     // Repite la condicion en caso de ser una operacion or
     while (range.peak() < range.end() && *(range.peak()) == '|')
     {
@@ -343,7 +386,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(b
         // nfa.Q_transitions[{q0, -1ULL}] = nfa.Q_nfa.size();
         nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
         // Guardamos el estado final del resultado de la cadena
-        ends.push_back(MRegex::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup));
+        ends.push_back(MRegex::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup, id));
         // Si se detuvo en una tuberia volver a realizar el procedimiento
     }
     // Para cada estado final se le agregara una ∊-transition al estado de union de la tuberia
@@ -353,7 +396,7 @@ MRegex::pair_begin_state_transitions MRegex::_S_build_nfa_parser_or_expresions(b
     if (!isGroup)
     {
         nfa.Q_nfa.push_back(nfa.Q_nfa.size());
-        nfa.F_nfa.insert(nfa.Q_nfa.size() - 1);
+        nfa.F_nfa.emplace(nfa.Q_nfa.size() - 1, id);
     }
     return {q0, {-1ULL}};
 }
@@ -362,23 +405,23 @@ NFA MRegex::build_nfa(const std::__cxx11::basic_string<char> &str)
 {
     basic_string_range<char> range = str;
     NFA nfa;
-    nfa.begin_Q_nfa.push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
+    nfa.begin_Q_nfa.push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false, 0).first);
     return nfa;
 }
 
-NFA MRegex::build_nfa(const std::initializer_list<std::__cxx11::basic_string<char>> &list)
+NFA MRegex::build_nfa(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<char>>> &list)
 {
     NFA nfa;
     nfa.Q_nfa.push_back(0);
     nfa.begin_Q_nfa.push_back(0);
     for (auto &&expresion : list)
     {
-        basic_string_range<char> range = expresion;
-        nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false).first);
+        basic_string_range<char> range = expresion.second;
+        nfa.Q_transitions[{0, -1ULL}].push_back(MRegex::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first).first);
     }
     return nfa;
 }
-
+#if TESTCODE
 NFA MRegex::build_nfa(const char *argv[], size_t size)
 {
     NFA nfa;
@@ -391,7 +434,7 @@ NFA MRegex::build_nfa(const char *argv[], size_t size)
     }
     return nfa;
 }
-
+#endif
 DFA::States MRegex::elipson_cloursers(DFA::States states, const NFA &nfa)
 {
     std::stack<size_t> stack_status;
@@ -445,9 +488,10 @@ DFA MRegex::convert_nfa_to_dfa(const NFA &nfa)
 
         for (auto &&state : index)
         {
-            if (nfa.F_nfa.count(state) > 0)
+            auto fiterator = nfa.F_nfa.find(state);
+            if (fiterator != nfa.F_nfa.end())
             {
-                dfa.F_dfa.insert(actual);
+                dfa.F_dfa.emplace(actual, fiterator->second);
                 break;
             }
         }

@@ -3,7 +3,7 @@
 #include <fcntl.h>
 
 #define RANGE_STR false
-#define VIEW_NFA false
+#define VIEW_NFA true
 #define VIEW_DFA false
 #define VIEW_TABLE false
 
@@ -11,6 +11,7 @@ int main(int argc, char const *argv[])
 {
     #if VIEW_NFA
     _setmode(_fileno(stdout), _O_U16TEXT);
+    _setmode(_fileno(stdin), _O_U16TEXT);
     #endif
     // "[a-zA-Z_][a-zA-Z_0-9]*", "0|[1-9][0-9]*"
     // [a-zA-Z_0-9]+@gmail.com
@@ -22,7 +23,9 @@ int main(int argc, char const *argv[])
     // else
     //     nfa = MRegex::build_nfa(argv, argc);
     // nfa = MRegex::build_nfa("\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|.");
-    nfa = MRegex::build_nfa({"constexpr", "[a-zA-Z_][a-zA-Z_0-9]*", "(0|[1-9][0-9]*)(.[0-9]+)?([eE][\\+\\-]?[0-9]+)?", "\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|."});
+    nfa = MRegex::build_nfa("\\n\\t\\v\\b\\r\\f\\0\\001\\123\\u1fa5\\U1fe345a4\\x2f");
+    // nfa = MRegex::build_nfa("\\n\\t\\v\\b\\r\\f\\0\\001\\123\\u1fa4\\U1fe345a4\\x1f");
+    // nfa = MRegex::build_nfa({{0, "constexpr"}, {1, "[a-zA-Z_][a-zA-Z_0-9]*"}, {2, "(0|[1-9][0-9]*)(.[0-9]+)?([eE][\\+\\-]?[0-9]+)?"}, {3, "\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|."}});
     #if VIEW_NFA
     nfa.view();
     std::wcout << std::endl;
@@ -59,11 +62,11 @@ int main(int argc, char const *argv[])
         basic_string_range range = str;
         auto pai = MRegex::caption<MRegex::Selector::_maximun_munch>(range, table);
         if (pai.first)
-            std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(range.begin().base(), pai.first) << std::endl;
+            std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(range.begin().base(), pai.first) << " : " << pai.second << std::endl;
 #else
         auto pai = MRegex::caption<MRegex::Selector::_maximun_munch>(str, table);
         if (pai.first)
-            std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(const_cast<const char*>(str.begin().base()), pai.first) << std::endl;
+            std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(const_cast<const char*>(str.begin().base()), pai.first) << " : " << pai.second << std::endl;
 #endif
         else
             std::wcout << "dfa: " << std::boolalpha << false << std::endl;

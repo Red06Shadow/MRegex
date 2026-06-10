@@ -15,7 +15,7 @@ public: //  Structs, Enums, Class
     using Qdfa = std::vector<States>;
     using Transitions = std::map<std::pair<size_t, char>, size_t>;
     using Dictionary = std::set<char>;
-    using Fdfa = std::set<size_t>;
+    using Fdfa = std::map<size_t, size_t>;
 
 private:
     /// @brief Estados
