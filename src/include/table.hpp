@@ -2,8 +2,10 @@
 #define _TABLEDFA
 
 #include <corecrt.h>
+#include <type_traits>
 #include <map>
 
+template <typename CharT>
 class MRegex;
 
 class TableDFA
@@ -27,6 +29,7 @@ public:
     ~TableDFA();
     void view() const;
     inline size_t size() const { return Q_dfa * dictionary * sizeof(size_t);}
-    friend MRegex;
+    friend MRegex<char>;
+    friend MRegex<wchar_t>;
 };
 #endif

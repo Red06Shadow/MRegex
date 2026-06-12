@@ -3,8 +3,8 @@
 #include <fcntl.h>
 
 #define RANGE_STR false
-#define VIEW_NFA true
-#define VIEW_DFA false
+#define VIEW_NFA false
+#define VIEW_DFA true
 #define VIEW_TABLE false
 
 int main(int argc, char const *argv[])
@@ -17,24 +17,24 @@ int main(int argc, char const *argv[])
     // [a-zA-Z_0-9]+@gmail.com
     // "(0|[1-9][0-9]*)(.[0-9]+)?([eE][\\+\\-]?[0-9]+)?"
 
-    NFA nfa;
     // if (argc < 2)
     //     nfa = MRegex::build_nfa({"a{1,4}"});
     // else
     //     nfa = MRegex::build_nfa(argv, argc);
     // nfa = MRegex::build_nfa("\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|.");
-    nfa = MRegex::build_nfa("\\n\\t\\v\\b\\r\\f\\0\\001\\123\\u1fa5\\U1fe345a4\\x2f");
+    // NFA nfa = MRegex<char>::build_nfa("\\n\\t\\v\\b\\r\\f\\0\\001\\123\\u1fa5\\U1fe345a4\\x2f");
     // nfa = MRegex::build_nfa("\\n\\t\\v\\b\\r\\f\\0\\001\\123\\u1fa4\\U1fe345a4\\x1f");
-    // nfa = MRegex::build_nfa({{0, "constexpr"}, {1, "[a-zA-Z_][a-zA-Z_0-9]*"}, {2, "(0|[1-9][0-9]*)(.[0-9]+)?([eE][\\+\\-]?[0-9]+)?"}, {3, "\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|."}});
+    // NFA nfa = MRegex<char>::build_nfa("\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|.");
+    NFA nfa = MRegex<char>::build_nfa({{0, "constexpr"}, {1, "[a-zA-Z_][a-zA-Z_0-9]*"}, {2, "(0|[1-9][0-9]*)(.[0-9]+)?([eE][\\+\\-]?[0-9]+)?"}, {3, "\\+\\+?|--?|&&?|\\|\\|?|\\*|/|\\{|}|\\?|::?|^|!|->|."}});
     #if VIEW_NFA
     nfa.view();
     std::wcout << std::endl;
     #endif
-    DFA dfa = MRegex::convert_nfa_to_dfa(nfa);
+    DFA<char> dfa = MRegex<char>::convert_nfa_to_dfa(nfa);
     #if VIEW_DFA
     dfa.view();
     #endif
-    TableDFA table = MRegex::convert_dfa_to_table(dfa);
+    TableDFA table = MRegex<char>::convert_dfa_to_table(dfa);
     #if VIEW_TABLE and not VIEW_NFA
     table.view();
     #endif
@@ -64,7 +64,7 @@ int main(int argc, char const *argv[])
         if (pai.first)
             std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(range.begin().base(), pai.first) << " : " << pai.second << std::endl;
 #else
-        auto pai = MRegex::caption<MRegex::Selector::_maximun_munch>(str, table);
+        auto pai = MRegex<char>::caption<Selector::maximun_munch>(str, table);
         if (pai.first)
             std::cout << "dfa: " << std::boolalpha << true << ": " << std::string(const_cast<const char*>(str.begin().base()), pai.first) << " : " << pai.second << std::endl;
 #endif
@@ -74,4 +74,3 @@ int main(int argc, char const *argv[])
 #endif
     return 0;
 }
-// Crear dos algoritmos, DFA puro interpretado o Tabla compilada
