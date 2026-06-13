@@ -4,14 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/debug)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/release)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/release)
-include_directories(${CMAKE_SOURCE_DIR}/src/include)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 project(regex)
 
-add_executable(regex 
-${CMAKE_SOURCE_DIR}/src/main.cpp
-${CMAKE_SOURCE_DIR}/src/libs/mregex.cpp
-${CMAKE_SOURCE_DIR}/src/libs/nfa.cpp
-${CMAKE_SOURCE_DIR}/src/libs/dfa.cpp
-${CMAKE_SOURCE_DIR}/src/libs/table.cpp
-)
+add_executable(regex ${CMAKE_SOURCE_DIR}/src/main.cpp)
