@@ -18,7 +18,7 @@ namespace myregex
     class basic_build;
 
     template <typename CharT>
-    class NFA
+    class basic_nfa
     {
     public:
         static_assert(std::is_same_v<CharT, char> || std::is_same_v<CharT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
@@ -47,18 +47,18 @@ namespace myregex
         friend basic_build<CharT>;
 
     public:
-        NFA() : Q_nfa(), begin_Q_nfa(), Q_transitions(), Q_dictionary(), F_nfa() {}
+        basic_nfa() : Q_nfa(), begin_Q_nfa(), Q_transitions(), Q_dictionary(), F_nfa() {}
         inline const Qnfa& status() const { return Q_nfa;}
         inline const Qnfa& begin_status() const { return begin_Q_nfa;}
         inline const Transitions& transitions() const { return Q_transitions;}
         inline const Dictionary& dictionary() const { return Q_dictionary;}
         inline const Fnfa& accepted_status() const { return F_nfa;}
         void view() const;
-        ~NFA() {}
+        ~basic_nfa() {}
     };
 
     template <typename CharT>
-    void NFA<CharT>::view() const
+    void basic_nfa<CharT>::view() const
     {
         std::wcout << L"Estados (Q_nfa) [ ";
         for (size_t i = 0; i < Q_nfa.size(); i++)
@@ -120,6 +120,10 @@ namespace myregex
 
         std::wcout << L'}' << std::endl;
     }
-
+    using CompatibleNfa = myregex::basic_nfa<char>;
+    using nfa = myregex::basic_nfa<char>;
+    /////////////////////////////////////////////////////////////////////
+    using UnicodeNfa = myregex::basic_nfa<wchar_t>;
+    using wnfa = myregex::basic_nfa<wchar_t>;
 } // namespace myregex
 #endif

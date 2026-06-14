@@ -15,7 +15,7 @@ namespace myregex
     class basic_build;
 
     template <typename CharT>
-    class DFA
+    class basic_dfa
     {
     public: //  Structs, Enums, Class
         static_assert(std::is_same_v<CharT, char> || std::is_same_v<CharT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
@@ -38,18 +38,32 @@ namespace myregex
         Fdfa F_dfa;
 
     public:
-        DFA() : Q_dfa(), Q_transitions({}), Q_dictionary({}), F_dfa({}), begin_Q_dfa({}) {}
-        inline const Qdfa& status() const { return Q_dfa;}
-        inline const States& begin_status() const { return begin_Q_dfa;}
-        inline const Transitions& transitions() const { return Q_transitions;}
-        inline const Dictionary& dictionary() const { return Q_dictionary;}
-        inline const Fdfa& accepted_status() const { return F_dfa;}
+        basic_dfa() : Q_dfa(), Q_transitions({}), Q_dictionary({}), F_dfa({}), begin_Q_dfa({}) {}
+        inline const Qdfa &status() const { return Q_dfa; }
+        inline const States &begin_status() const { return begin_Q_dfa; }
+        inline const Transitions &transitions() const { return Q_transitions; }
+        inline const Dictionary &dictionary() const { return Q_dictionary; }
+        inline const Fdfa &accepted_status() const { return F_dfa; }
+        size_t size() const;
         void view() const;
-        ~DFA() {}
+        ~basic_dfa() {}
         friend basic_build<CharT>;
     };
     template <typename CharT>
-    void DFA<CharT>::view() const
+    size_t basic_dfa<CharT>::size() const
+    {
+        size_t _size = 0;
+        for (auto &&i : Q_dfa)
+            _size += i.size() * sizeof(size_t);
+        _size += sizeof(Qdfa);
+        _size += Q_dictionary.size() * sizeof(CharT) + sizeof(Dictionary);
+        _size += begin_Q_dfa.size() * sizeof(size_t) + sizeof(States);
+        _size += F_dfa.size() * (sizeof(size_t) * 2) + sizeof(Fdfa);
+        _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(CharT)) + sizeof(Transitions);
+        return _size;
+    }
+    template <typename CharT>
+    void basic_dfa<CharT>::view() const
     {
         std::wcout << L"Estados (Q_dfa) [ ";
 
@@ -95,7 +109,11 @@ namespace myregex
 
         std::wcout << L'}' << std::endl;
     }
-
+    using CompatibleDfa = myregex::basic_dfa<char>;
+    using dfa = myregex::basic_dfa<char>;
+    /////////////////////////////////////////////////////////////////////
+    using UnicodeDfa = myregex::basic_dfa<wchar_t>;
+    using wdfa = myregex::basic_dfa<wchar_t>;
 } // namespace myregex
 
 #endif
