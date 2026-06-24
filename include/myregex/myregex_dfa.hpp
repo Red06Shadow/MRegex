@@ -1,12 +1,13 @@
 #ifndef _DFA
 #define _DFA
 
-#include <corecrt.h>
-#include <type_traits>
-#include <map>
-#include <set>
 #include <iostream>
 #include <vector>
+#include <map>
+#include <set>
+#include <corecrt.h>
+#include <type_traits>
+
 
 namespace myregex
 {
@@ -20,29 +21,41 @@ namespace myregex
     public: //  Structs, Enums, Class
         static_assert(std::is_same_v<CharT, char> || std::is_same_v<CharT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
         using States = std::set<size_t>;
+
+#if !(OPTIMIZATION_DFA)
         using Qdfa = std::vector<States>;
-        using Transitions = std::map<std::pair<size_t, CharT>, size_t>;
         using Dictionary = std::set<CharT>;
+#endif
+        using Transitions = std::map<std::pair<size_t, CharT>, size_t>;
         using Fdfa = std::map<size_t, size_t>;
 
     private:
+#if !(OPTIMIZATION_DFA)
         /// @brief Estados
         Qdfa Q_dfa;
         /// @brief Estados de inicio
         States begin_Q_dfa;
-        /// @brief Transiciones
-        Transitions Q_transitions;
         /// @brief Diccionario
         Dictionary Q_dictionary;
+#endif
+        /// @brief Transiciones
+        Transitions Q_transitions;
         /// @brief Estados de Acpetacion
         Fdfa F_dfa;
 
     public:
+#if (OPTIMIZATION_DFA)
+        basic_dfa() : Q_transitions({}), F_dfa({}) {}
+#else
         basic_dfa() : Q_dfa(), Q_transitions({}), Q_dictionary({}), F_dfa({}), begin_Q_dfa({}) {}
+
+#endif
+#if !(OPTIMIZATION_DFA)
         inline const Qdfa &status() const { return Q_dfa; }
         inline const States &begin_status() const { return begin_Q_dfa; }
-        inline const Transitions &transitions() const { return Q_transitions; }
         inline const Dictionary &dictionary() const { return Q_dictionary; }
+#endif
+        inline const Transitions &transitions() const { return Q_transitions; }
         inline const Fdfa &accepted_status() const { return F_dfa; }
         size_t size() const;
         void view() const;
@@ -53,11 +66,13 @@ namespace myregex
     size_t basic_dfa<CharT>::size() const
     {
         size_t _size = 0;
+#if !(OPTIMIZATION_DFA)
         for (auto &&i : Q_dfa)
             _size += i.size() * sizeof(size_t);
         _size += sizeof(Qdfa);
         _size += Q_dictionary.size() * sizeof(CharT) + sizeof(Dictionary);
         _size += begin_Q_dfa.size() * sizeof(size_t) + sizeof(States);
+#endif
         _size += F_dfa.size() * (sizeof(size_t) * 2) + sizeof(Fdfa);
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(CharT)) + sizeof(Transitions);
         return _size;
@@ -65,6 +80,7 @@ namespace myregex
     template <typename CharT>
     void basic_dfa<CharT>::view() const
     {
+#if !(OPTIMIZATION_DFA)
         std::wcout << L"Estados (Q_dfa) [ ";
 
         for (size_t state = 0; state < Q_dfa.size(); state++)
@@ -83,9 +99,11 @@ namespace myregex
         for (auto &&letter : Q_dictionary)
             std::wcout << letter << L' ';
 
-        std::wcout << L'}' << std::endl
-                   << L"Transiciones (Q_transitions): " << std::endl
+        std::wcout << L'}' << std::endl;
+#endif
+        std::wcout << L"Transiciones (Q_transitions): " << std::endl
                    << L'{' << std::endl;
+
         for (auto &&[key, state] : Q_transitions)
         {
             std::wcout << L"    {" << key.first << L", ";
@@ -95,17 +113,18 @@ namespace myregex
                 std::wcout << wchar_t(key.second);
             std::wcout << L"} -> { " << state << L' ' << L'}' << std::endl;
         }
-        std::wcout << L'}' << std::endl
-                   << L"Estados de Inicio (begin_Q_dfa): { ";
+        std::wcout << L'}' << std::endl;
+#if !(OPTIMIZATION_DFA)
+        std::wcout << L"Estados de Inicio (begin_Q_dfa): { ";
 
         for (auto &&state : begin_Q_dfa)
             std::wcout << state << L' ';
-
-        std::wcout << L"}" << std::endl
-                   << L"Estados de aceptacion (F_dfa): { ";
+        std::wcout << L"}" << std::endl;
+#endif
+        std::wcout << L"Estados de aceptacion (F_dfa): { " << std::endl;
 
         for (auto &&[key, value] : F_dfa)
-            std::wcout << key << ':' << value << std::endl;
+            std::wcout << L'{' << key << L"; id: " << value << L'}' << std::endl;
 
         std::wcout << L'}' << std::endl;
     }

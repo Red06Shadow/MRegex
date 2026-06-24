@@ -1,0 +1,8 @@
+#ifndef MYREGEXGLOBAL
+#define MYREGEXGLOBAL
+
+#define OPTIMIZATION false
+#define OPTIMIZATION_NFA false || OPTIMIZATION
+#define OPTIMIZATION_DFA true || OPTIMIZATION
+
+#endif

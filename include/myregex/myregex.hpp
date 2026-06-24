@@ -24,13 +24,14 @@ namespace myregex
         static_assert(std::is_same_v<CharT, char> || std::is_same_v<CharT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
 
     private:
-        typename std::__cxx11::basic_string<CharT>::const_iterator _M_iterator;
+        typename std::__cxx11::basic_string<CharT> _M_string;
         const size_t _M_id;
 
     public:
-        caption(const typename std::__cxx11::basic_string<CharT>::const_iterator &iterator, size_t id) : _M_iterator(iterator), _M_id(id) {}
-        caption(const CharT *iterator, size_t id) : _M_iterator(iterator), _M_id(id) {}
-        inline const typename std::__cxx11::basic_string<CharT>::const_iterator &iterator() const { return _M_iterator; }
+        caption(const typename std::__cxx11::basic_string<CharT> &str, size_t id) : _M_string(str), _M_id(id) {}
+        caption(const CharT *begin, const CharT *end, size_t id) : _M_string(begin, end), _M_id(id) {}
+        inline const typename std::__cxx11::basic_string<CharT> &str() const { return _M_string; }
+        bool is_valid() const { return _M_id != -1ULL; }
         inline size_t id() const { return _M_id; }
         ~caption() {}
     };
@@ -98,7 +99,7 @@ namespace myregex
         static size_t _S_build_nfa_parser_regular_expresions_basic(basic_string_range<CharT> &, basic_nfa<CharT> &, bool, size_t);
         static _M_begin_transitions _S_build_nfa_parser_or_expresions(basic_string_range<CharT> &, basic_nfa<CharT> &, bool, size_t);
 
-    private: // Funtions basic_nfa -> basic_dfa
+    public: // Funtions basic_nfa -> basic_dfa
         // Funciones adicionales del convertidor de basic_nfa a basic_dfa
         static typename basic_dfa<CharT>::States _S_elipson_cloursers(typename basic_dfa<CharT>::States, const basic_nfa<CharT> &);
         static typename basic_dfa<CharT>::States _S_move(typename basic_dfa<CharT>::States, CharT, const basic_nfa<CharT> &);
@@ -127,7 +128,7 @@ namespace myregex
         /// @brief Convierte el basic_dfa a una tabla de transiciones de basic_dfa
         /// @param dfa
         /// @return Devuelve la tabla dfa
-        static TableDFA convert_dfa_to_table(const basic_dfa<CharT> &dfa);
+        static basic_table<CharT> convert_dfa_to_table(const basic_dfa<CharT> &dfa);
 
         // template <typename AllocatorRegexT = myregex::basic_dfa<CharT>>
         // void compile(const AllocatorRegexT& regular, const std::__cxx11::basic_string<CharT>& path);
@@ -136,12 +137,13 @@ namespace myregex
     /// @brief Clase basica para el uso de expresiones regulares
     /// @tparam CharT
     /// @tparam AllocatorRegexT
-    template <typename CharT, typename AllocatorRegexT = myregex::basic_dfa<CharT>>
+    template <typename CharT, typename AllocatorRegexT>
     class basic_regex
     {
     public:
         static_assert(std::is_same_v<CharT, char> || std::is_same_v<CharT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
-        static_assert(std::is_same_v<AllocatorRegexT, myregex::basic_dfa<CharT>> || std::is_same_v<AllocatorRegexT, myregex::TableDFA>, "Error: no se permiten tipos de datos que no sean basic_dfa ni TableDFA");
+
+        static_assert(std::is_same_v<AllocatorRegexT, myregex::basic_nfa<CharT>> || std::is_same_v<AllocatorRegexT, myregex::basic_dfa<CharT>> || std::is_same_v<AllocatorRegexT, myregex::basic_table<CharT>>, "Error: no se permiten tipos de datos que no sea basic_nfa");
 
     private:
         AllocatorRegexT allocator;
@@ -151,29 +153,46 @@ namespace myregex
         /// @param list
         basic_regex(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<CharT>>> &list)
         {
-            basic_nfa<CharT> nfa = myregex::basic_build<CharT>::build_nfa(list);
-            if constexpr (std::is_same_v<AllocatorRegexT, myregex::basic_dfa<CharT>>)
+            if constexpr (std::is_same_v<AllocatorRegexT, myregex::basic_nfa<CharT>>)
+            {
+                allocator = myregex::basic_build<CharT>::build_nfa(list);
+            }
+            else if constexpr (std::is_same_v<AllocatorRegexT, myregex::basic_dfa<CharT>>)
+            {
+                basic_nfa<CharT> nfa = myregex::basic_build<CharT>::build_nfa(list);
                 allocator = myregex::basic_build<CharT>::convert_nfa_to_dfa(nfa);
-            else if constexpr (std::is_same_v<AllocatorRegexT, TableDFA>)
+            }
+            else
+            {
+                basic_nfa<CharT> nfa = myregex::basic_build<CharT>::build_nfa(list);
                 allocator = myregex::basic_build<CharT>::convert_dfa_to_table(myregex::basic_build<CharT>::convert_nfa_to_dfa(nfa));
+            }
         }
         basic_regex(const AllocatorRegexT &regularexpresion) : allocator(regularexpresion) {}
         basic_regex(AllocatorRegexT &&regularexpresion) : allocator(std::move(regularexpresion)) {}
 
-        static bool verification(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex);
+        static bool verification(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex)
+        {
+            basic_string_range<CharT> range = str;
+            return myregex::basic_regex<CharT, AllocatorRegexT>::verification(range, allocator_regex);
+        }
         static bool verification(basic_string_range<CharT> &range, const AllocatorRegexT &allocator_regex);
 
         /// @brief Esta funcion verifica si la cadena representada por str es valida
         /// @param str Cadena a leer
         /// @return Verdarero si lo es falso si no
-        inline bool verification(const std::__cxx11::basic_string<CharT> &str) const { return myregex::basic_regex<CharT>::verification(str, allocator); }
+        inline bool verification(const std::__cxx11::basic_string<CharT> &str) const { return myregex::basic_regex<CharT, AllocatorRegexT>::verification(str, allocator); }
         /// @brief Esta funcion verifica si la cadena representada por range es valida
         /// @param str rango de caracteres de una cadena (para lexers)
         /// @return Verdarero si lo es falso si no
-        inline bool verification(basic_string_range<CharT> &range) const { return myregex::basic_regex<CharT>::verification(range, allocator); }
+        inline bool verification(basic_string_range<CharT> &range) const { return myregex::basic_regex<CharT, AllocatorRegexT>::verification(range, allocator); }
 
         template <myregex::constants::match_options option>
-        static myregex::caption<CharT> _S_match(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex);
+        inline static myregex::caption<CharT> _S_match(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex)
+        {
+            basic_string_range<CharT> range = str;
+            return myregex::basic_regex<CharT, AllocatorRegexT>::template _S_match<option>(range, allocator_regex);
+        }
         // template <myregex::constants::match_options option>
         // inline static myregex::caption<CharT> &&_M_match(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex) { return std::move(myregex::basic_regex<CharT>::template _S_match<option>(str, allocator_regex)); }
         template <myregex::constants::match_options option>
@@ -186,13 +205,13 @@ namespace myregex
         /// @param str Cadena a leer
         /// @return Devuelve el iterador al final de la cadena captada o nullptr si hay error junto al identificador de estado de aceptacion
         template <myregex::constants::match_options option>
-        inline myregex::caption<CharT> match(const std::__cxx11::basic_string<CharT> &str) const { return myregex::basic_regex<CharT>::template _S_match<option>(str, allocator); }
+        inline myregex::caption<CharT> match(const std::__cxx11::basic_string<CharT> &str) const { return myregex::basic_regex<CharT, AllocatorRegexT>::template _S_match<option>(str, allocator); }
         /// @brief Esta funcion capta o valida segun el parametro S las cadenas de caracteres dentro del range
         /// @tparam S Determina la operacion de la funcion
         /// @param str rango de caracteres de una cadena (para lexers)
         /// @return Devuelve el iterador al final de la cadena captada o nullptr si hay error junto al identificador de estado de aceptacion
         template <myregex::constants::match_options option>
-        inline myregex::caption<CharT> match(basic_string_range<CharT> &range) const { return myregex::basic_regex<CharT>::template _S_match<option>(range, allocator); }
+        inline myregex::caption<CharT> match(basic_string_range<CharT> &range) const { return myregex::basic_regex<CharT, AllocatorRegexT>::template _S_match<option>(range, allocator); }
 
         inline size_t size() const { return allocator.size(); }
         inline void view() const { allocator.view(); }
@@ -204,14 +223,14 @@ namespace myregex
     /////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////
-    template <typename AllocatorRegexT = myregex::basic_dfa<char>>
+    template <typename AllocatorRegexT>
     using CompatibleRegex = myregex::basic_regex<char, AllocatorRegexT>;
-    template <typename AllocatorRegexT = myregex::basic_dfa<char>>
+    template <typename AllocatorRegexT>
     using regex = myregex::basic_regex<char, AllocatorRegexT>;
     /////////////////////////////////////////////////////////////////////
-    template <typename AllocatorRegexT = myregex::basic_dfa<wchar_t>>
+    template <typename AllocatorRegexT>
     using UnicodeRegex = myregex::basic_regex<wchar_t, AllocatorRegexT>;
-    template <typename AllocatorRegexT = myregex::basic_dfa<wchar_t>>
+    template <typename AllocatorRegexT>
     using wregex = myregex::basic_regex<wchar_t, AllocatorRegexT>;
     /////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////
@@ -436,7 +455,7 @@ namespace myregex
                         optionals_groups.push_back(state_group_begin);
                     for (size_t state_group = 0; state_group < n_state; state_group++)
                     {
-                        nfa.Q_nfa.push_back(nfa.Q_nfa.size());
+                        nfa.Q_nfa.push_back(nfa.Q_nfa[state_group_begin + state_group]);
                         for (auto &&[key, value] : nfa.Q_transitions)
                         {
                             if (key.first != _T_qAtr.first + state_group)
@@ -464,7 +483,7 @@ namespace myregex
                     state_iterator = nfa.Q_nfa.size();
                     // Y si el rango es menor que el maximo - 1 se agrega el nuevo estado generado
                     if (state < cualifiquer_range.second - 1ULL)
-                        nfa.Q_nfa.push_back(state_iterator);
+                        nfa.Q_nfa.push_back(nfa.Q_nfa[state]);
                 }
             }
             break;
@@ -490,7 +509,7 @@ namespace myregex
         bool inverter = false;
         size_t position_start = range.position(range.peak(), -1ULL);
 
-        nfa.Q_nfa.push_back(qA);
+        nfa.Q_nfa.push_back({});
         // Chequeamos si es una clase invertida
         if (*range.peak() == CharT('^'))
         {
@@ -616,6 +635,20 @@ namespace myregex
                 basic_build<CharT>::_S_parser_cualifiquer(range, nfa, _T_qAtr, false);
                 break;
             }
+            case CharT('^'):
+            {
+                if(nfa.Q_nfa.back().questbeginline)
+                    throw myregex::regex_error("do you has mention this status when begin line", range.position(range.peak(), -1ULL), range, 17);
+                nfa.Q_nfa.back().questbeginline = true;
+                break;
+            }
+            case CharT('$'):
+            {
+                if(nfa.Q_nfa.back().questendline)
+                    throw myregex::regex_error("do you has mention this status when end line", range.position(range.peak(), -1ULL), range, 18);
+                nfa.Q_nfa.back().questendline = true;
+                break;
+            }
             case CharT('*'):
             case CharT('+'):
             case CharT('?'):
@@ -628,7 +661,7 @@ namespace myregex
                 // Simplemente creamos el estado y agregamos la trsnicion
                 size_t qA = nfa.Q_nfa.size();
                 nfa.Q_dictionary.insert(c);
-                nfa.Q_nfa.push_back(qA);
+                nfa.Q_nfa.push_back({});
                 // Y agregamos su respectivo cualificador
                 basic_build<CharT>::_S_parser_cualifiquer(range, nfa, {qA, {size_t(c)}}, false);
                 break;
@@ -636,7 +669,7 @@ namespace myregex
             }
         }
         size_t qEnd = nfa.Q_nfa.size();
-        nfa.Q_nfa.push_back(qEnd);
+        nfa.Q_nfa.push_back({});
         return qEnd;
     }
 
@@ -651,7 +684,7 @@ namespace myregex
         std::vector<size_t> ends = {};
         // Obtenemos el estado final y lo agregamos
         size_t q0 = nfa.Q_nfa.size();
-        nfa.Q_nfa.push_back(q0);
+        nfa.Q_nfa.push_back({});
         // Obtenemos el primer estado
         // Agregamos una ∊-transition hacia ese estado
         nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
@@ -677,7 +710,7 @@ namespace myregex
         // Por ultimo generamos correctamente el estado
         if (!isGroup)
         {
-            nfa.Q_nfa.push_back(nfa.Q_nfa.size());
+            nfa.Q_nfa.push_back({});
             nfa.F_nfa.emplace(nfa.Q_nfa.size() - 1, id);
         }
         return {q0, {-1ULL}};
@@ -685,7 +718,7 @@ namespace myregex
 
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////basic_dfa////////////////////////////////////////////
+    //////////////////////////////////////basic_dfa/////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -733,9 +766,13 @@ namespace myregex
         std::map<typename basic_dfa<CharT>::States, size_t> status_map = {{q0, 0}};
         std::queue<typename basic_dfa<CharT>::States> queue_status;
         queue_status.push(q0);
+#if OPTIMIZATION_DFA
+        size_t qS = 1;
+#else
         dfa.begin_Q_dfa.insert(0);
         dfa.Q_dictionary = nfa.Q_dictionary;
         dfa.Q_dfa.push_back(q0);
+#endif
 
         while (!queue_status.empty())
         {
@@ -760,8 +797,13 @@ namespace myregex
                     continue;
                 if (status_map.count(newindex) < 1)
                 {
+#if OPTIMIZATION_DFA
+                    status_map[newindex] = qS;
+                    qS++;
+#else
                     status_map[newindex] = dfa.Q_dfa.size();
                     dfa.Q_dfa.push_back(newindex);
+#endif
                     queue_status.push(newindex);
                 }
                 dfa.Q_transitions[{actual, caraceter}] = status_map[newindex];
@@ -772,15 +814,15 @@ namespace myregex
 
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////TableDFA//////////////////////////////////////////
+    //////////////////////////////////////basic_table//////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
 
     template <typename CharT>
-    myregex::TableDFA basic_build<CharT>::convert_dfa_to_table(const basic_dfa<CharT> &dfa)
+    myregex::basic_table<CharT> basic_build<CharT>::convert_dfa_to_table(const basic_dfa<CharT> &dfa)
     {
         size_t sizeAlphabet = std::pow(256, sizeof(CharT));
-        TableDFA table = TableDFA(dfa.Q_dfa.size(), sizeAlphabet, dfa.F_dfa);
+        basic_table table = basic_table(dfa.Q_dfa.size(), sizeAlphabet, dfa.F_dfa);
         for (size_t state = 0; state < dfa.Q_dfa.size(); state++)
         {
             for (size_t letter = 0; letter < sizeAlphabet; letter++)
@@ -811,7 +853,7 @@ namespace myregex
     myregex::basic_nfa<CharT> basic_build<CharT>::build_nfa(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<CharT>>> &list)
     {
         basic_nfa<CharT> nfa;
-        nfa.Q_nfa.push_back(0);
+        nfa.Q_nfa.push_back({});
         nfa.begin_Q_nfa.push_back(0);
         for (auto &&expresion : list)
         {
@@ -842,144 +884,140 @@ namespace myregex
     //////////////////////////////////////caption///////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
-
-    template <typename CharT, typename AllocatorRegexT>
-    bool basic_regex<CharT, AllocatorRegexT>::verification(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex)
-    {
-        size_t status = 0;
-        size_t acceptance_status = -1ULL;
-        size_t id = -1ULL;
-        std::__cxx11::basic_string<char>::const_iterator iterator_caption = str.begin();
-        while (iterator_caption < str.end())
-        {
-            char letter = *iterator_caption;
-            if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
-            {
-                auto transition = allocator_regex.transitions().find({status, letter});
-                if (transition == allocator_regex.transitions().end())
-                    return false;
-                status = transition->second;
-            }
-            else if constexpr (std::is_same_v<AllocatorRegexT, TableDFA>)
-                if ((status = allocator_regex.transitions()[status][letter]) == -1ULL)
-                    return false; // No hay transición, rechazar
-            iterator_caption++;
-        }
-        return iterator_caption == str.end() && allocator_regex.accepted_status().count(status) > 0;
-    }
     template <typename CharT, typename AllocatorRegexT>
     bool basic_regex<CharT, AllocatorRegexT>::verification(basic_string_range<CharT> &range, const AllocatorRegexT &allocator_regex)
     {
-        size_t status = 0;
-        size_t acceptance_status = -1ULL;
-        size_t id = -1ULL;
-        while (range.peak() < range.end())
+        if constexpr (std::is_same_v<AllocatorRegexT, basic_nfa<CharT>>)
         {
-            char letter = *range.peak();
-            if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
+            typename myregex::basic_dfa<CharT>::States status = myregex::basic_build<CharT>::_S_elipson_cloursers({0}, allocator_regex);
+            while (range.peak() < range.end())
             {
+                CharT letter = *range.peak(); 
+                status = myregex::basic_build<CharT>::_S_move_elipson_cloursers(status, letter);
+                if (status.empty())
+                    break;
+                range.next();
+            }
+            for (auto &&state : status)
+                if (std::map<size_t, size_t>::const_iterator it = allocator_regex.accepted_status().find(state); it != allocator_regex.accepted_status().end())
+                    return true;
+            return false;
+        }
+        else if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
+        {
+            size_t status = 0;
+            while (range.peak() < range.end())
+            {
+                CharT letter = *range.peak();
                 auto transition = allocator_regex.transitions.find({status, letter});
                 if (transition == allocator_regex.transitions.end())
                     return false;
                 status = transition->second;
+                range.next();
             }
-            else if constexpr (std::is_same_v<AllocatorRegexT, TableDFA>)
+            return range.peak() == range.end() && allocator_regex.accepted_status().count(status) > 0;
+        }
+        else
+        {
+            size_t status = 0;
+            while (range.peak() < range.end())
+            {
+                CharT letter = *range.peak();
                 if ((status = allocator_regex.transitions[status][letter]) == -1ULL)
                     return false; // No hay transición, rechazar
-            range.peak()++;
+                range.next();
+            }
+            return range.peak() == range.end() && allocator_regex.accepted_status().count(status) > 0;
         }
-        return range.peak() == range.end() && allocator_regex.accepted_status().count(status) > 0;
     }
-    template <typename CharT, typename AllocatorRegexT>
-    template <myregex::constants::match_options option>
-    myregex::caption<CharT> basic_regex<CharT, AllocatorRegexT>::_S_match(const std::__cxx11::basic_string<CharT> &str, const AllocatorRegexT &allocator_regex)
-    {
-        size_t status = 0;
-        size_t acceptance_status = -1ULL;
-        size_t id = -1ULL;
-        std::__cxx11::basic_string<char>::const_iterator end_caption = std::__cxx11::basic_string<char>::const_iterator();
-        for (std::__cxx11::basic_string<char>::const_iterator iterator_caption = str.begin(); iterator_caption < str.end(); iterator_caption++)
-        {
-            char letter = *iterator_caption;
-            if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
-            {
-                auto transition = allocator_regex.transitions().find({status, letter});
-                if (transition == allocator_regex.transitions().end())
-                    break; // No hay transición, rechazar
-                status = transition->second;
-            }
-            else if constexpr (std::is_same_v<AllocatorRegexT, TableDFA>)
-            {
-                size_t next_state = allocator_regex.transitions()[status][letter];
-                if (next_state == -1ULL)
-                    break; // No hay transición, rechazar
-                status = next_state;
-            }
-            if (status == acceptance_status)
-                end_caption = iterator_caption + 1;
-            else if (allocator_regex.accepted_status().count(status) > 0)
-            {
-                acceptance_status = status;
-                if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-                    return {iterator_caption + 1, allocator_regex.F_dfa.at(acceptance_status)};
-                else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-                {
-                    end_caption = iterator_caption + 1;
-                    id = allocator_regex.accepted_status().at(acceptance_status);
-                }
-            }
-        }
-        if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-            return myregex::caption<CharT>(end_caption, id);
-        else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return myregex::caption<CharT>(nullptr, -1ULL);
-    }
-
     template <typename CharT, typename AllocatorRegexT>
     template <myregex::constants::match_options option>
     myregex::caption<CharT> basic_regex<CharT, AllocatorRegexT>::_S_match(basic_string_range<CharT> &range, const AllocatorRegexT &allocator_regex)
     {
-        size_t status = 0;
-        size_t acceptance_status = -1ULL;
+        std::__cxx11::basic_string<CharT> _M_string{};
         size_t id = -1ULL;
-        // typename basic_string_range<CharT>::iterator iterator_caption;
-        typename basic_string_range<CharT>::iterator end_caption = std::__cxx11::basic_string<char>::const_iterator();
-        while (range.peak() < range.end())
+        if constexpr (std::is_same_v<AllocatorRegexT, basic_nfa<CharT>>)
         {
-            char letter = *range.peak();
-            if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
+            typename myregex::basic_dfa<CharT>::States status = myregex::basic_build<CharT>::_S_elipson_cloursers({0}, allocator_regex);
+            while (range.peak() < range.end())
             {
+                size_t __id = -1ULL;
+                CharT letter = *range.peak();
+                status = myregex::basic_build<CharT>::_S_move_elipson_cloursers(status, letter, allocator_regex);
+                if (status.empty())
+                    break;
+                _M_string.push_back(letter);
+                for (auto &&state : status)
+                    if (std::map<size_t, size_t>::const_iterator it = allocator_regex.accepted_status().find(state); it != allocator_regex.accepted_status().end())
+                        if (__id == -1ULL || it->second < __id)
+                            __id = it->second;
+                if constexpr (option == myregex::constants::match_options::_S_first_sequence)
+                    return {_M_string, __id};
+                else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                    id = __id;
+                range.next();
+            }
+        }
+        else if constexpr (std::is_same_v<AllocatorRegexT, basic_dfa<CharT>>)
+        {
+            size_t status = 0;
+            size_t acceptance_status = -1ULL;
+            while (range.peak() < range.end())
+            {
+                CharT letter = *range.peak();
                 auto transition = allocator_regex.transitions().find({status, letter});
                 if (transition == allocator_regex.transitions().end())
                     break; // No hay transición, rechazar
                 status = transition->second;
+                _M_string.push_back(letter);
+                if (status == acceptance_status)
+                {
+                    range.next();
+                    continue;
+                }
+                else if (allocator_regex.accepted_status().count(status) > 0)
+                {
+                    acceptance_status = status;
+                    if constexpr (option == myregex::constants::match_options::_S_first_sequence)
+                        return {_M_string, allocator_regex.accepted_status().at(acceptance_status)};
+                    else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                        id = allocator_regex.accepted_status().at(acceptance_status);
+                }
+                range.next();
             }
-            else if constexpr (std::is_same_v<AllocatorRegexT, TableDFA>)
+        }
+        else
+        {
+            size_t status = 0;
+            size_t acceptance_status = -1ULL;
+            while (range.peak() < range.end())
             {
+                CharT letter = *range.peak();
                 size_t next_state = allocator_regex.transitions()[status][letter];
                 if (next_state == -1ULL)
                     break; // No hay transición, rechazar
                 status = next_state;
-            }
-            if (status == acceptance_status)
-                end_caption = range.peak() + 1;
-            else if (allocator_regex.accepted_status().count(status) > 0)
-            {
-                acceptance_status = status;
-                if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-                    return {range.peak() + 1, allocator_regex.accepted_status().at(acceptance_status)};
-                else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                _M_string.push_back(letter);
+                if (status == acceptance_status)
                 {
-                    end_caption = range.peak() + 1;
-                    id = allocator_regex.accepted_status().at(acceptance_status);
+                    range.next();
+                    continue;
                 }
+                else if (allocator_regex.accepted_status().count(status) > 0)
+                {
+                    acceptance_status = status;
+                    if constexpr (option == myregex::constants::match_options::_S_first_sequence)
+                        return {_M_string, allocator_regex.accepted_status().at(acceptance_status)};
+                    else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                        id = allocator_regex.accepted_status().at(acceptance_status);
+                }
+                range.next();
             }
-            range.next();
         }
         if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-            return myregex::caption<CharT>(end_caption, id);
+            return myregex::caption<CharT>(_M_string, id);
         else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return myregex::caption<CharT>(nullptr, -1ULL);
+            return myregex::caption<CharT>({}, -1ULL);
     }
 } // namespace myregex
 
