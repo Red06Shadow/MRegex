@@ -9,5 +9,4 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 project(regex)
 
-add_executable(regex ${CMAKE_SOURCE_DIR}/src/main.cpp
-    include/myregex/myregex_status_control.hpp)
+add_executable(regex ${CMAKE_SOURCE_DIR}/src/main.cpp)

@@ -2,7 +2,7 @@
 #define MYREGEXERROR
 
 #include <stdexcept>
-#include "myregex_iterators.hpp"
+#include <myregex/utilities/range.hpp>
 
 namespace myregex
 {
