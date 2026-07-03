@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-namespace myregex
+namespace std
 {
     template <typename T>
     struct selector;
@@ -21,6 +21,6 @@ namespace myregex
         using streamtype = std::wostream;
         static inline streamtype &stream() { return std::wcout; }
     };
-} // namespace myregex
+} // namespace std
 
 #endif

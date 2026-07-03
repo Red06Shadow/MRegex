@@ -85,6 +85,7 @@ namespace myregex
             return *this;
         }
         myregex::basic_regex<charT, idT> build() { return std::move(_M_expresions); }
+        friend basic_regex<charT, idT>;
     };
 
     template <typename idT>
@@ -564,8 +565,8 @@ namespace myregex
         // Por ultimo generamos correctamente el estado
         if (!isGroup)
         {
-            nfa.Q_nfa.push_back({});
-            nfa.F_nfa.emplace(nfa.Q_nfa.size() - 1, id);
+            nfa.Q_nfa.push_back(myregex::state(id));
+            // nfa.F_nfa.emplace(nfa.Q_nfa.size() - 1, id);
         }
         return q0;
     }
@@ -647,7 +648,7 @@ namespace myregex
         std::map<std::set<size_t>, size_t> status_map = {{q0, 0}};
         std::queue<std::set<size_t>> queue_status;
         queue_status.push(q0);
-        size_t qS = 1;
+        dfa.Q_dfa.push_back({});
 
         while (!queue_status.empty())
         {
@@ -657,12 +658,17 @@ namespace myregex
 
             for (auto &&state : index)
             {
-                auto fiterator = nfa.F_nfa.find(state);
-                if (fiterator != nfa.F_nfa.end())
+                if (nfa.Q_nfa[state].valid())
                 {
-                    dfa.F_dfa.emplace(actual, fiterator->second);
+                    dfa.Q_dfa[actual] = nfa.Q_nfa[state];
                     break;
                 }
+                // auto fiterator = nfa.F_nfa.find(state);
+                // if (fiterator != nfa.F_nfa.end())
+                // {
+                //     dfa.F_dfa.emplace(actual, fiterator->second);
+                //     break;
+                // }
             }
 
             for (auto &&caraceter : nfa.Q_dictionary)
@@ -672,30 +678,30 @@ namespace myregex
                     continue;
                 if (status_map.count(newindex) < 1)
                 {
-                    status_map[newindex] = qS;
-                    qS++;
+                    status_map[newindex] = dfa.Q_dfa.size();
+                    dfa.Q_dfa.push_back({});
                     queue_status.push(newindex);
                 }
                 dfa.Q_transitions[{actual, caraceter}] = status_map[newindex];
             }
         }
-        dfa.Q_dfa = qS;
+        // dfa.Q_dfa = qS;
         return dfa;
     }
     template <typename charT, typename idT>
     myregex::basic_table<charT, idT> myregex::basic_builder<charT, idT>::build_table(const basic_dfa<charT, idT> &dfa)
     {
         size_t sizeAlphabet = std::pow(256, sizeof(charT));
-        size_t size_table;
-        size_table = dfa.Q_dfa;
-        basic_table<charT, idT> table{size_table, dfa.F_dfa};
-        for (size_t state = 0; state < size_table; state++)
+        basic_table<charT, idT> table {dfa.Q_dfa};
+        for (size_t state = 0; state < table.Q_table.size(); state++)
         {
             for (size_t letter = 0; letter < sizeAlphabet; letter++)
             {
                 auto transition = dfa.Q_transitions.find({state, charT(letter)});
                 if (transition != dfa.Q_transitions.end())
-                    table.Q_transitions[state][letter] = transition->second;
+                    table.Q_transitions[(state * table.dictionary) + myregex::basic_builder<charT, idT>::_S_transition(letter)] = transition->second;
+                else
+                    table.Q_transitions[(state * table.dictionary) + myregex::basic_builder<charT, idT>::_S_transition(letter)] = -1ULL;
             }
         }
         return table;

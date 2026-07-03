@@ -8,6 +8,7 @@
 #include <corecrt.h>
 #include <type_traits>
 #include <myregex/utilities/selector.hpp>
+#include <myregex/automaton/base/state.hpp>
 
 #define DEBUG false
 
@@ -21,21 +22,19 @@ namespace myregex
     {
     public: //  Structs, Enums, Class
         static_assert(std::is_same_v<charT, char> || std::is_same_v<charT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
+        using Qdfa = std::vector<myregex::state<idT>>;
         using Transitions = std::map<std::pair<size_t, charT>, size_t>;
-        using Fdfa = std::map<size_t, idT>;
 
     private:
-        /// @brief Numero de Estados
-        size_t Q_dfa;
+        /// @brief Estados
+        Qdfa Q_dfa;
         /// @brief Transiciones
         Transitions Q_transitions;
-        /// @brief Estados de Acpetacion
-        Fdfa F_dfa;
 
     public:
-        basic_dfa() : Q_transitions({}), F_dfa({}) {}
+        basic_dfa() : Q_transitions({}), Q_dfa({}) {}
         inline const Transitions &transitions() const { return Q_transitions; }
-        inline const Fdfa &accepted_status() const { return F_dfa; }
+        inline const Qdfa &status() const { return Q_dfa; }
         size_t size() const;
 #if DEBUG
         void view() const;
@@ -48,7 +47,7 @@ namespace myregex
     {
         size_t _size = 0;
         _size += sizeof(size_t);
-        _size += F_dfa.size() * (sizeof(size_t) * 2) + sizeof(Fdfa);
+        _size += Q_dfa.size() * (sizeof(myregex::state<idT>) * 2) + sizeof(Qdfa);
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
         return _size;
     }
@@ -56,18 +55,12 @@ namespace myregex
     template <typename charT, typename idT>
     void basic_dfa<charT, idT>::view() const
     {
-        myregex::selector<charT>::stream() << "Transiciones (Q_transitions): " << std::endl
+        std::selector<charT>::stream() << "Transiciones (Q_transitions): " << std::endl
                                   << '{' << std::endl;
 
         for (auto &&[key, state] : Q_transitions)
-            myregex::selector<charT>::stream() << "    {" << key.first << ", " << charT(key.second) << "} -> { " << state << " }" << std::endl;
-        myregex::selector<charT>::stream() << '}' << std::endl;
-        myregex::selector<charT>::stream() << "Estados de aceptacion (F_dfa): { " << std::endl;
-
-        for (auto &&[key, value] : F_dfa)
-            myregex::selector<charT>::stream() << '{' << key << "; id: " << value << '}' << std::endl;
-
-        myregex::selector<charT>::stream() << '}' << std::endl;
+            std::selector<charT>::stream() << "    {" << key.first << ", " << charT(key.second) << "} -> { " << state << " }" << std::endl;
+        std::selector<charT>::stream() << '}' << std::endl;
     }
 #endif
     template <typename idT>
