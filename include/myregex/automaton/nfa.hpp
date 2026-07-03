@@ -9,6 +9,8 @@
 #include <set>
 #include <myregex/utilities/selector.hpp>
 
+#define DEBUG false
+
 namespace myregex
 {
 
@@ -47,7 +49,9 @@ namespace myregex
         inline const Transitions &transitions() const { return Q_transitions; }
         inline const Dictionary &dictionary() const { return Q_dictionary; }
         inline const Fnfa &accepted_status() const { return F_nfa; }
+    #if DEBUG
         void view() const;
+    #endif
         size_t size() const;
         ~basic_nfa() {}
     };
@@ -63,7 +67,7 @@ namespace myregex
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
         return _size;
     }
-
+#if DEBUG
     template <typename charT, typename idT>
     void basic_nfa<charT, idT>::view() const
     {
@@ -101,6 +105,7 @@ namespace myregex
 
         myregex::selector<charT>::stream() << '}' << std::endl;
     }
+#endif
     template <typename idT>
     using CompatibleNfa = myregex::basic_nfa<char, idT>;
     template <typename idT>

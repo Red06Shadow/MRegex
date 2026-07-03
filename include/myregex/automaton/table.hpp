@@ -8,6 +8,8 @@
 #include <math.h>
 #include <myregex/utilities/selector.hpp>
 
+#define DEBUG false
+
 namespace myregex
 {
     template <typename charT, typename idT>
@@ -40,7 +42,9 @@ namespace myregex
         inline static constexpr size_t dictionary = std::pow(256ULL, sizeof(charT));
         inline const Fdfa &accepted_status() const { return F_dfa; }
         inline size_t size() const { return Q_dfa * myregex::basic_table<charT, idT>::dictionary * sizeof(size_t); }
+#if DEBUG
         void view() const;
+#endif
         ~basic_table();
         friend basic_builder<charT, idT>;
     };
@@ -138,7 +142,7 @@ myregex::basic_table<charT, idT> &myregex::basic_table<charT, idT>::operator=(ba
     }
     return *this;
 }
-
+#if DEBUG
 template <typename charT, typename idT>
 void myregex::basic_table<charT, idT>::view() const
 {
@@ -166,7 +170,7 @@ void myregex::basic_table<charT, idT>::view() const
 
     myregex::selector<charT>::stream() << charT('}') << std::endl;
 }
-
+#endif
 template <typename charT, typename idT>
 myregex::basic_table<charT, idT>::~basic_table()
 {

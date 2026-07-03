@@ -3,9 +3,9 @@
 
 #include <variant>
 
-#include <myregex/structs/nfa.hpp>
-#include <myregex/structs/dfa.hpp>
-#include <myregex/structs/table.hpp>
+#include <myregex/automaton/nfa.hpp>
+#include <myregex/automaton/dfa.hpp>
+#include <myregex/automaton/table.hpp>
 #include <myregex/utilities/range.hpp>
 #include <myregex/utilities/selector.hpp>
 #include <myregex/exceptions/error.hpp>
@@ -153,7 +153,9 @@ namespace myregex
         inline myregex::caption<charT, idT> match(basic_string_range<charT> &range) const;
 
         inline size_t size() const;
+#if DEBUG
         inline void view() const;
+#endif
     };
 
     template <typename idT>
@@ -180,7 +182,7 @@ namespace myregex
             range.next();
         }
         for (auto &&state : status)
-            if (std::map<size_t, size_t>::const_iterator it = _nfa.accepted_status().find(state); it != _nfa.accepted_status().end())
+            if (typename myregex::basic_nfa<char, idT>::Fnfa::const_iterator it = _nfa.accepted_status().find(state); it != _nfa.accepted_status().end())
                 return true;
         return false;
     }
@@ -242,19 +244,19 @@ namespace myregex
     myregex::caption<charT, idT> basic_regex<charT, idT>::match(basic_string_range<charT> &range, const myregex::basic_nfa<charT, idT> &_nfa)
     {
         std::__cxx11::basic_string<charT> _M_string{};
-        size_t id = -1ULL;
+        idT id {};
         std::set<size_t> status = myregex::basic_builder<charT, idT>::_S_elipson_cloursers({0}, _nfa);
         while (range.peak() < range.end())
         {
-            size_t __id = -1ULL;
+            idT __id {};
             charT letter = *range.peak();
             status = myregex::basic_builder<charT, idT>::_S_move_elipson_cloursers(status, letter, _nfa);
             if (status.empty())
                 break;
             _M_string.push_back(letter);
             for (auto &&state : status)
-                if (std::map<size_t, size_t>::const_iterator it = _nfa.accepted_status().find(state); it != _nfa.accepted_status().end())
-                    if (__id == -1ULL || it->second < __id)
+                if (typename myregex::basic_nfa<char, idT>::Fnfa::const_iterator it = _nfa.accepted_status().find(state); it != _nfa.accepted_status().end())
+                    if (__id == idT({}) || it->second < __id)
                         __id = it->second;
             if constexpr (option == myregex::constants::match_options::_S_first_sequence)
                 return {_M_string, __id};
@@ -274,7 +276,7 @@ namespace myregex
     myregex::caption<charT, idT> basic_regex<charT, idT>::match(basic_string_range<charT> &range, const myregex::basic_dfa<charT, idT> &_dfa)
     {
         std::__cxx11::basic_string<charT> _M_string{};
-        size_t id = -1ULL;
+        idT id {};
         size_t status = 0;
         size_t acceptance_status = -1ULL;
         while (range.peak() < range.end())
@@ -310,7 +312,7 @@ namespace myregex
     myregex::caption<charT, idT> basic_regex<charT, idT>::match(basic_string_range<charT> &range, const myregex::basic_table<charT, idT> &_table)
     {
         std::__cxx11::basic_string<charT> _M_string{};
-        size_t id = -1ULL;
+        idT id {};
         size_t status = 0;
         size_t acceptance_status = -1ULL;
         while (range.peak() < range.end())
@@ -378,6 +380,7 @@ namespace myregex
             else
                 return 0; }, _M_expresions);
     }
+#if DEBUG
     template <typename charT, typename idT>
     void basic_regex<charT, idT>::view() const
     {
@@ -387,6 +390,7 @@ namespace myregex
             if constexpr (std::is_same_v<type, basic_nfa<charT, idT>> || std::is_same_v<type, basic_dfa<charT, idT>> || std::is_same_v<type, basic_table<charT, idT>>)
                 value.view(); }, _M_expresions);
     }
+#endif
 } // namespace myregex
 
 #endif

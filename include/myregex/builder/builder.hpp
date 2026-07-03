@@ -26,8 +26,8 @@ namespace myregex
         static _M_range_cualifiquer _S_parser_cualifiquer_range(basic_string_range<charT> &);
         static void _S_parser_cualifiquer(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, const _M_begin_transitions &, bool);
         static _M_begin_transitions _S_parser_nfa_parser_class_expresions(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &);
-        static size_t _S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, size_t);
-        static _M_begin_transitions _S_build_nfa_parser_or_expresions(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, size_t);
+        static size_t _S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, idT);
+        static size_t _S_build_nfa_parser_or_expresions(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, idT);
 
         constexpr inline static size_t _S_transition(charT caracter)
         {
@@ -53,10 +53,10 @@ namespace myregex
         std::variant<basic_nfa<charT, idT>, basic_dfa<charT, idT>, basic_table<charT, idT>> _M_expresions;
 
     public:
-        basic_builder(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
-        basic_builder(const std::vector<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
-        static myregex::basic_nfa<charT, idT> build_nfa(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list);
-        static myregex::basic_nfa<charT, idT> build_nfa(const std::vector<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list);
+        basic_builder(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
+        basic_builder(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
+        static myregex::basic_nfa<charT, idT> build_nfa(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list);
+        static myregex::basic_nfa<charT, idT> build_nfa(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list);
         static myregex::basic_dfa<charT, idT> build_dfa(const basic_nfa<charT, idT> &nfa);
         static myregex::basic_table<charT, idT> build_table(const basic_dfa<charT, idT> &dfa);
         myregex::basic_builder<charT, idT> &convert_to_dfa()
@@ -443,7 +443,7 @@ namespace myregex
     }
 
     template <typename charT, typename idT>
-    size_t basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, size_t id)
+    size_t basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
     {
         // Dado el rango de caracteres
         while (range.peak() < range.end())
@@ -462,7 +462,7 @@ namespace myregex
             {
                 size_t position_start = range.position(range.peak(), -1ULL);
                 // Genera un grupo de reglas, se utiliza la recursion de la fincion recursiva
-                _T_qAtr = basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, true, id);
+                _T_qAtr = {basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, true, id), {-1ULL}};
                 // Si no termina en la posicion correcta, error
                 if (range.peak() >= range.end())
                     throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
@@ -528,7 +528,7 @@ namespace myregex
     }
 
     template <typename charT, typename idT>
-    typename basic_builder<charT, idT>::_M_begin_transitions basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, size_t id)
+    size_t basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
     {
         // Preguntamos si el inicio es incorrect y lanzamos un error si es asi
         if (range.peak() == range.end())
@@ -567,7 +567,7 @@ namespace myregex
             nfa.Q_nfa.push_back({});
             nfa.F_nfa.emplace(nfa.Q_nfa.size() - 1, id);
         }
-        return {q0, {-1ULL}};
+        return q0;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -613,7 +613,7 @@ namespace myregex
     }
 
     template <typename charT, typename idT>
-    myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::initializer_list<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list)
+    myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list)
     {
         myregex::basic_nfa<charT, idT> nfa;
         nfa.begin_Q_nfa.push_back(0);
@@ -626,7 +626,7 @@ namespace myregex
         return nfa;
     }
     template <typename charT, typename idT>
-    myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::vector<std::pair<size_t, std::__cxx11::basic_string<charT>>> &list)
+    myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list)
     {
         myregex::basic_nfa<charT, idT> nfa;
         nfa.begin_Q_nfa.push_back(0);
@@ -634,7 +634,7 @@ namespace myregex
         for (auto &&expresion : list)
         {
             basic_string_range<charT> range = expresion.second;
-            nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first).first);
+            nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first));
         }
         return nfa;
     }

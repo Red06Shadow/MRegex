@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <myregex/utilities/selector.hpp>
 
+#define DEBUG false
+
 namespace myregex
 {
     template <typename charT, typename idT>
@@ -19,7 +21,7 @@ namespace myregex
     {
     public: //  Structs, Enums, Class
         static_assert(std::is_same_v<charT, char> || std::is_same_v<charT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
-        using Transitions = std::map<std::pair<size_t, charT>, idT>;
+        using Transitions = std::map<std::pair<size_t, charT>, size_t>;
         using Fdfa = std::map<size_t, idT>;
 
     private:
@@ -35,7 +37,9 @@ namespace myregex
         inline const Transitions &transitions() const { return Q_transitions; }
         inline const Fdfa &accepted_status() const { return F_dfa; }
         size_t size() const;
+#if DEBUG
         void view() const;
+#endif
         ~basic_dfa() {}
         friend basic_builder<charT, idT>;
     };
@@ -48,6 +52,7 @@ namespace myregex
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
         return _size;
     }
+#if DEBUG
     template <typename charT, typename idT>
     void basic_dfa<charT, idT>::view() const
     {
@@ -64,6 +69,7 @@ namespace myregex
 
         myregex::selector<charT>::stream() << '}' << std::endl;
     }
+#endif
     template <typename idT>
     using CompatibleDfa = basic_dfa<char, idT>;
     template <typename idT>
