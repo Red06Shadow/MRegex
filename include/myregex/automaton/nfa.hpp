@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <map>
 #include <set>
-#include <myregex/utilities/selector.hpp>
 #include <myregex/automaton/base/state.hpp>
 
 #define DEBUG false
@@ -43,13 +42,38 @@ namespace myregex
 
     public:
         basic_nfa() : Q_nfa(), begin_Q_nfa(), Q_transitions(), Q_dictionary() {}
+        basic_nfa(const Qnfa& _states, const SQnfa& _starts, const Transitions& _transitions, const Dictionary& _dictionary)  : Q_nfa(_states), begin_Q_nfa(_starts), Q_transitions(_transitions), Q_dictionary(_dictionary) {}
         inline const Qnfa &status() const { return Q_nfa; }
         inline const SQnfa &begin_status() const { return begin_Q_nfa; }
         inline const Transitions &transitions() const { return Q_transitions; }
         inline const Dictionary &dictionary() const { return Q_dictionary; }
-    #if DEBUG
-        void view() const;
-    #endif
+        friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_nfa<charT, idT> other)
+        {
+            out << '{';
+            for (size_t state = 0; other.Q_nfa.size(); state++)
+            {
+                if (other.Q_nfa[state].valid())
+                {
+                    if constexpr (std::is_enum_v<idT>)
+                        out << static_cast<size_t>(other.Q_nfa[state].get());
+                    else
+                        out << other.Q_nfa[state].get();
+                }
+                else
+                    out << "{}";
+                out << ((state >= other.Q_nfa.size() - 1ULL) ? '}':',');
+            }
+            out << std::endl << '{';
+            for (auto &&[key, state] : other.Q_transitions)
+            {
+                out << "    {{" << key.first << ',' << key.second << "},{";
+                for (size_t next = 0; next < state.size(); next++)
+                    out << state[next] << (next >= state.size() - 1ULL ? '}' : ',');
+                out << '}' << std::endl;
+            }
+            out << '}' << std::endl;
+            return out;
+        }
         size_t size() const;
         ~basic_nfa() {}
     };
@@ -64,37 +88,6 @@ namespace myregex
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
         return _size;
     }
-#if DEBUG
-    template <typename charT, typename idT>
-    void basic_nfa<charT, idT>::view() const
-    {
-        std::selector<charT>::stream() << "Diccionario (dictionary): { ";
-
-        for (auto &&letter : Q_dictionary)
-            std::selector<charT>::stream() << letter << ' ';
-
-        std::selector<charT>::stream() << '}' << std::endl
-                   << "Transiciones (Q_transitions): " << std::endl
-                   << '{' << std::endl;
-        for (auto &&[key, states] : Q_transitions)
-        {
-            if (key.second == -1ULL)
-            {
-                std::selector<charT>::stream() << "    {" << key.first << "} -> { ";
-                for (size_t state = 0; state < states.size(); state++)
-                    std::selector<charT>::stream() << states[state] << (state >= states.size() - 1ULL ? " }" : ", ");
-                std::selector<charT>::stream() << std::endl;
-            }
-            else
-                std::selector<charT>::stream() << "    {" << key.first << ", " << charT(key.second) << "} -> { " << states.back() << " }" << std::endl;
-        }
-        std::selector<charT>::stream() << '}' << std::endl 
-                   << "Estados de Inicio (begin_Q_nfa): { ";
-
-        for (auto &&state : begin_Q_nfa)
-            std::selector<charT>::stream() << state << ' ';
-    }
-#endif
     template <typename idT>
     using CompatibleNfa = myregex::basic_nfa<char, idT>;
     template <typename idT>

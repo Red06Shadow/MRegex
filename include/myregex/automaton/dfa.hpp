@@ -7,7 +7,6 @@
 #include <set>
 #include <corecrt.h>
 #include <type_traits>
-#include <myregex/utilities/selector.hpp>
 #include <myregex/automaton/base/state.hpp>
 
 #define DEBUG false
@@ -33,12 +32,33 @@ namespace myregex
 
     public:
         basic_dfa() : Q_transitions({}), Q_dfa({}) {}
+        basic_dfa(const Qdfa &_states, const Transitions &_transitions) : Q_transitions(_transitions), Q_dfa(_states) {}
         inline const Transitions &transitions() const { return Q_transitions; }
         inline const Qdfa &status() const { return Q_dfa; }
         size_t size() const;
-#if DEBUG
-        void view() const;
-#endif
+        friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_dfa<charT, idT> other)
+        {
+            out << '{';
+            for (size_t state = 0; other.Q_dfa.size(); state++)
+            {
+                if (other.Q_dfa[state].valid())
+                {
+                    if constexpr (std::is_enum_v<idT>)
+                        out << static_cast<size_t>(other.Q_dfa[state].get());
+                    else
+                        out << other.Q_dfa[state].get();
+                }
+                else
+                    out << "{}";
+                out << ((state >= other.Q_dfa.size() - 1ULL) ? '}':',');
+            }
+            out << std::endl
+                << '{';
+            for (auto &&[key, state] : other.Q_transitions)
+                out << "    {{" << key.first << ", " << charT(key.second) << "}, { " << state << " }}," << std::endl;
+            out << '}' << std::endl;
+            return out;
+        }
         ~basic_dfa() {}
         friend basic_builder<charT, idT>;
     };
@@ -51,18 +71,6 @@ namespace myregex
         _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
         return _size;
     }
-#if DEBUG
-    template <typename charT, typename idT>
-    void basic_dfa<charT, idT>::view() const
-    {
-        std::selector<charT>::stream() << "Transiciones (Q_transitions): " << std::endl
-                                  << '{' << std::endl;
-
-        for (auto &&[key, state] : Q_transitions)
-            std::selector<charT>::stream() << "    {" << key.first << ", " << charT(key.second) << "} -> { " << state << " }" << std::endl;
-        std::selector<charT>::stream() << '}' << std::endl;
-    }
-#endif
     template <typename idT>
     using CompatibleDfa = basic_dfa<char, idT>;
     template <typename idT>
