@@ -6,8 +6,8 @@
 #include <myregex/automaton/nfa.hpp>
 #include <myregex/automaton/dfa.hpp>
 #include <myregex/automaton/table.hpp>
-#include <myregex/utilities/range.hpp>
-#include <myregex/utilities/selector.hpp>
+#include <utilities/range.hpp>
+#include <utilities/selector.hpp>
 #include <myregex/exceptions/error.hpp>
 
 namespace myregex

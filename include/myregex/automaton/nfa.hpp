@@ -42,7 +42,7 @@ namespace myregex
 
     public:
         basic_nfa() : Q_nfa(), begin_Q_nfa(), Q_transitions(), Q_dictionary() {}
-        basic_nfa(const Qnfa& _states, const SQnfa& _starts, const Transitions& _transitions, const Dictionary& _dictionary)  : Q_nfa(_states), begin_Q_nfa(_starts), Q_transitions(_transitions), Q_dictionary(_dictionary) {}
+        basic_nfa(const Qnfa &_states, const SQnfa &_starts, const Transitions &_transitions, const Dictionary &_dictionary) : Q_nfa(_states), begin_Q_nfa(_starts), Q_transitions(_transitions), Q_dictionary(_dictionary) {}
         inline const Qnfa &status() const { return Q_nfa; }
         inline const SQnfa &begin_status() const { return begin_Q_nfa; }
         inline const Transitions &transitions() const { return Q_transitions; }
@@ -50,7 +50,7 @@ namespace myregex
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_nfa<charT, idT> other)
         {
             out << '{';
-            for (size_t state = 0; other.Q_nfa.size(); state++)
+            for (size_t state = 0; state < other.Q_nfa.size(); state++)
             {
                 if (other.Q_nfa[state].valid())
                 {
@@ -61,17 +61,34 @@ namespace myregex
                 }
                 else
                     out << "{}";
-                out << ((state >= other.Q_nfa.size() - 1ULL) ? '}':',');
+                out << ((state >= other.Q_nfa.size() - 1ULL) ? '}' : ',');
             }
-            out << std::endl << '{';
-            for (auto &&[key, state] : other.Q_transitions)
+            out << ',' << std::endl
+                << '{';
+            for (size_t state = 0; state < other.begin_Q_nfa.size(); state++)
+                out << other.begin_Q_nfa[state] << ((state >= (other.begin_Q_nfa.size() - 1ULL)) ? '}' : ',');
+            out << ',' << std::endl
+                << '{';
+            for (typename Transitions::const_iterator it = other.Q_transitions.begin(); it != other.Q_transitions.end(); it++)
             {
-                out << "    {{" << key.first << ',' << key.second << "},{";
-                for (size_t next = 0; next < state.size(); next++)
-                    out << state[next] << (next >= state.size() - 1ULL ? '}' : ',');
-                out << '}' << std::endl;
+                if (it != other.Q_transitions.begin())
+                    out << ',';
+                out << std::endl
+                    << "    {{" << it->first.first << ',' << it->first.second << "ULL},{";
+                for (size_t next = 0; next < it->second.size(); next++)
+                    out << it->second[next] << (next >= it->second.size() - 1ULL ? '}' : ',');
+                out << "}";
             }
-            out << '}' << std::endl;
+            out << std::endl
+                << "}," << std::endl
+                << '{';
+            for (typename Dictionary::const_iterator it = other.Q_dictionary.begin(); it != other.Q_dictionary.end(); it++)
+            {
+                if (it != other.Q_dictionary.begin())
+                    out << ',';
+                out << '\'' << *it << '\'';
+            }
+            out << '}';
             return out;
         }
         size_t size() const;

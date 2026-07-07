@@ -45,9 +45,9 @@ namespace myregex
 
     public: // Funtions myregex::basic_nfa -> basic_dfa
         // Funciones adicionales del convertidor de myregex::basic_nfa a basic_dfa
-        static std::set<size_t> _S_elipson_cloursers(const std::set<size_t>&, const myregex::basic_nfa<charT, idT> &);
-        static std::set<size_t> _S_move(const std::set<size_t>&, charT, const myregex::basic_nfa<charT, idT> &);
-        inline static std::set<size_t> _S_move_elipson_cloursers(const std::set<size_t>& states, charT a, const myregex::basic_nfa<charT, idT> &nfa) { return _S_elipson_cloursers(_S_move(states, a, nfa), nfa); }
+        static std::set<size_t> _S_elipson_cloursers(const std::set<size_t> &, const myregex::basic_nfa<charT, idT> &);
+        static std::set<size_t> _S_move(const std::set<size_t> &, charT, const myregex::basic_nfa<charT, idT> &);
+        inline static std::set<size_t> _S_move_elipson_cloursers(const std::set<size_t> &states, charT a, const myregex::basic_nfa<charT, idT> &nfa) { return _S_elipson_cloursers(_S_move(states, a, nfa), nfa); }
 
     private:
         std::variant<basic_nfa<charT, idT>, basic_dfa<charT, idT>, basic_table<charT, idT>> _M_expresions;
@@ -62,20 +62,19 @@ namespace myregex
         myregex::basic_builder<charT, idT> &convert_to_dfa()
         {
             myregex::basic_dfa<charT, idT> _M_provitional = std::visit([](auto &&value) -> myregex::basic_dfa<charT, idT>
-                                       {
+                                                                       {
             using type = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<type, basic_nfa<charT, idT>>)
                 return build_dfa(value);
             else
-                throw myregex::regex_error("imposible operation whit not nfa struct", myregex::error_type::_S_runtime_error, 20);
-            }, _M_expresions);
+                throw myregex::regex_error("imposible operation whit not nfa struct", myregex::error_type::_S_runtime_error, 20); }, _M_expresions);
             _M_expresions = _M_provitional;
             return *this;
         }
         myregex::basic_builder<charT, idT> &convert_to_table()
         {
             myregex::basic_table<charT, idT> _M_provitional = std::visit([](auto &&value) -> myregex::basic_table<charT, idT>
-                                       {
+                                                                         {
             using type = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<type, basic_dfa<charT, idT>>)
                 return build_table(value);
@@ -578,7 +577,7 @@ namespace myregex
     ////////////////////////////////////////////////////////////////////////////////////////
 
     template <typename charT, typename idT>
-    std::set<size_t> basic_builder<charT, idT>::_S_elipson_cloursers(const std::set<size_t>& states, const basic_nfa<charT, idT> &nfa)
+    std::set<size_t> basic_builder<charT, idT>::_S_elipson_cloursers(const std::set<size_t> &states, const basic_nfa<charT, idT> &nfa)
     {
         std::stack<size_t> stack_status;
         std::set<size_t> clourser = states;
@@ -601,13 +600,13 @@ namespace myregex
     }
 
     template <typename charT, typename idT>
-    std::set<size_t> basic_builder<charT, idT>::_S_move(const std::set<size_t>& states, charT a, const basic_nfa<charT, idT> &nfa)
+    std::set<size_t> basic_builder<charT, idT>::_S_move(const std::set<size_t> &states, charT a, const basic_nfa<charT, idT> &nfa)
     {
         std::set<size_t> result = {};
         for (auto &&state : states)
         {
             typename basic_nfa<charT, idT>::Transitions::const_iterator iterator = nfa.Q_transitions.begin();
-            if ((iterator = nfa.Q_transitions.find({state, a})) != nfa.Q_transitions.end())
+            if ((iterator = nfa.Q_transitions.find({state, myregex::basic_builder<charT, idT>::_S_transition(a)})) != nfa.Q_transitions.end())
                 result.insert(iterator->second[0]);
         }
         return result;
@@ -663,12 +662,6 @@ namespace myregex
                     dfa.Q_dfa[actual] = nfa.Q_nfa[state];
                     break;
                 }
-                // auto fiterator = nfa.F_nfa.find(state);
-                // if (fiterator != nfa.F_nfa.end())
-                // {
-                //     dfa.F_dfa.emplace(actual, fiterator->second);
-                //     break;
-                // }
             }
 
             for (auto &&caraceter : nfa.Q_dictionary)
@@ -685,26 +678,24 @@ namespace myregex
                 dfa.Q_transitions[{actual, caraceter}] = status_map[newindex];
             }
         }
-        // dfa.Q_dfa = qS;
         return dfa;
     }
     template <typename charT, typename idT>
     myregex::basic_table<charT, idT> myregex::basic_builder<charT, idT>::build_table(const basic_dfa<charT, idT> &dfa)
     {
-        size_t sizeAlphabet = std::pow(256, sizeof(charT));
-        basic_table<charT, idT> table {dfa.Q_dfa};
-        for (size_t state = 0; state < table.Q_table.size(); state++)
+        std::basic_allocator<size_t> ttable = std::basic_allocator<size_t>(dfa.size() * basic_table<charT, idT>::dictionary);
+        for (size_t state = 0; state < dfa.status().size(); state++)
         {
-            for (size_t letter = 0; letter < sizeAlphabet; letter++)
+            for (size_t letter = 0; letter < basic_table<charT, idT>::dictionary; letter++)
             {
-                auto transition = dfa.Q_transitions.find({state, charT(letter)});
-                if (transition != dfa.Q_transitions.end())
-                    table.Q_transitions[(state * table.dictionary) + myregex::basic_builder<charT, idT>::_S_transition(letter)] = transition->second;
+                auto transition = dfa.transitions().find({state, letter});
+                if (transition != dfa.transitions().end())
+                    ttable[(state * basic_table<charT, idT>::dictionary) + letter] = transition->second;
                 else
-                    table.Q_transitions[(state * table.dictionary) + myregex::basic_builder<charT, idT>::_S_transition(letter)] = -1ULL;
+                    ttable[(state * basic_table<charT, idT>::dictionary) + letter] = -1ULL;
             }
         }
-        return table;
+        return {std::move(dfa.Q_dfa), std::move(ttable)};
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -712,7 +703,7 @@ namespace myregex
     ////////////////////////Funciones que requieren _S_move/////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////
-    
+
 } // namespace myregex
 
 #endif

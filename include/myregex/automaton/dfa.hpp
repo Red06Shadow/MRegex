@@ -39,7 +39,7 @@ namespace myregex
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_dfa<charT, idT> other)
         {
             out << '{';
-            for (size_t state = 0; other.Q_dfa.size(); state++)
+            for (size_t state = 0;  state < other.Q_dfa.size(); state++)
             {
                 if (other.Q_dfa[state].valid())
                 {
@@ -52,11 +52,17 @@ namespace myregex
                     out << "{}";
                 out << ((state >= other.Q_dfa.size() - 1ULL) ? '}':',');
             }
-            out << std::endl
+            out << ',' << std::endl
                 << '{';
-            for (auto &&[key, state] : other.Q_transitions)
-                out << "    {{" << key.first << ", " << charT(key.second) << "}, { " << state << " }}," << std::endl;
-            out << '}' << std::endl;
+            for (typename Transitions::const_iterator it = other.Q_transitions.begin(); it != other.Q_transitions.end(); it++)
+            {
+                if (it != other.Q_transitions.begin())
+                    out << ',';
+                out << std::endl
+                    << "    {{" << it->first.first << ", '" << charT(it->first.second) << "'}, " << it->second << " }";
+            }
+            out << std::endl
+                << '}' << std::endl;
             return out;
         }
         ~basic_dfa() {}
