@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <stdint.h>
 #include <corecrt.h>
 #include <type_traits>
 #include <myregex/automaton/base/state.hpp>
@@ -38,7 +39,7 @@ namespace myregex
         size_t size() const;
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_dfa<charT, idT> other)
         {
-            out << '{';
+            out << charT('{');
             for (size_t state = 0;  state < other.Q_dfa.size(); state++)
             {
                 if (other.Q_dfa[state].valid())
@@ -50,19 +51,21 @@ namespace myregex
                 }
                 else
                     out << "{}";
-                out << ((state >= other.Q_dfa.size() - 1ULL) ? '}':',');
+                out << charT((state >= other.Q_dfa.size() - 1ULL) ? '}':',');
             }
-            out << ',' << std::endl
-                << '{';
+            out << charT(',') << std::endl
+                << charT('{');
             for (typename Transitions::const_iterator it = other.Q_transitions.begin(); it != other.Q_transitions.end(); it++)
             {
                 if (it != other.Q_transitions.begin())
-                    out << ',';
-                out << std::endl
-                    << "    {{" << it->first.first << ", '" << charT(it->first.second) << "'}, " << it->second << " }";
+                    out << charT(',');
+                if constexpr (std::is_same_v<charT, char>)
+                    out << std::endl << "    {{" << it->first.first << ", '" << charT(uint8_t(it->first.second)) << "'}, " << it->second << " }";
+                else 
+                    out << std::endl << L"    {{" << it->first.first << L", L'" << charT(static_cast<uint8_t>(it->first.second)) << L"'}, " << it->second << L" }";
             }
             out << std::endl
-                << '}' << std::endl;
+                << charT('}') << std::endl;
             return out;
         }
         ~basic_dfa() {}

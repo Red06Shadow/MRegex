@@ -67,7 +67,7 @@ namespace myregex
             if constexpr (std::is_same_v<type, basic_nfa<charT, idT>>)
                 return build_dfa(value);
             else
-                throw myregex::regex_error("imposible operation whit not nfa struct", myregex::error_type::_S_runtime_error, 20); }, _M_expresions);
+                throw myregex::basic_regex_error<charT>("imposible operation whit not nfa struct", myregex::error_type::_S_runtime_error, 20); }, _M_expresions);
             _M_expresions = _M_provitional;
             return *this;
         }
@@ -79,7 +79,7 @@ namespace myregex
             if constexpr (std::is_same_v<type, basic_dfa<charT, idT>>)
                 return build_table(value);
             else
-                throw myregex::regex_error("imposible operation whit not dfa struct", myregex::error_type::_S_runtime_error, 21); }, _M_expresions);
+                throw myregex::basic_regex_error<charT>("imposible operation whit not dfa struct", myregex::error_type::_S_runtime_error, 21); }, _M_expresions);
             _M_expresions = _M_provitional;
             return *this;
         }
@@ -104,7 +104,7 @@ namespace myregex
         for (charT i = 0; i < _S; i++)
         {
             if (range.peak() >= range.end())
-                throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
             charT caracter = *range.peak();
             if (caracter >= charT('a') && caracter <= charT('f'))
                 result = result * 16 + (caracter - charT('a') + 10);
@@ -113,7 +113,7 @@ namespace myregex
             else if (caracter >= charT('0') && caracter <= charT('9'))
                 result = result * 16 + (caracter - charT('0'));
             else
-                throw myregex::regex_error("caracter no permitido en el formato de caracter unicode", range.position(range.peak()), range, 1);
+                throw myregex::basic_regex_error<charT>("caracter no permitido en el formato de caracter unicode", range.position(range.peak()), range, 1);
             range.next();
         }
         return result;
@@ -126,7 +126,7 @@ namespace myregex
         for (char i = 0; i < 3; i++)
         {
             if (range.peak() >= range.end() && i < 1)
-                throw myregex::regex_error("formato de caracter octal incorrecto", range.position(range.end(), 1ULL), range, 2);
+                throw myregex::basic_regex_error<charT>("formato de caracter octal incorrecto", range.position(range.end(), 1ULL), range, 2);
             char caracter = *range.peak();
             if (caracter >= '0' && caracter <= '7')
                 result = result * 8 + (caracter - '0');
@@ -142,7 +142,7 @@ namespace myregex
     {
         charT c;
         if (range.peak() >= range.end())
-            throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
         switch (c = *range.peak())
         {
         case charT('n'):
@@ -220,26 +220,26 @@ namespace myregex
             {
                 // Y el rn apunta a el numero 2(maximo)
                 if (invalid)
-                    throw myregex::regex_error("min value no inserted", range.position(range.peak()), range, 16);
+                    throw myregex::basic_regex_error<charT>("min value no inserted", range.position(range.peak()), range, 16);
                 if (rn == &n2)
-                    throw myregex::regex_error("invalid subdivision", range.position(range.peak()), range, 4);
+                    throw myregex::basic_regex_error<charT>("invalid subdivision", range.position(range.peak()), range, 4);
                 // Cambiamos el puntero de n1(minimo) a n2(maximo)
                 rn = &n2;
                 // Y activamos la invalidacion
                 invalid = true;
             }
             else // Si no solo se emite el error de caracter invalido
-                throw myregex::regex_error("invalid caracter inserted", range.position(range.peak()), range, 5);
+                throw myregex::basic_regex_error<charT>("invalid caracter inserted", range.position(range.peak()), range, 5);
             range.next(); // Y por ultimo pasamos al siguiente
         }
         if (range.peak() == range.end()) // Si no se llego al final del cualificador, emitir error
-            throw myregex::regex_error("unespect termination of range", range.position(range.end(), 1ULL), range, 6);
+            throw myregex::basic_regex_error<charT>("unespect termination of range", range.position(range.end(), 1ULL), range, 6);
         if (invalid) // si es invalida, emitir tambien un error
-            throw myregex::regex_error("invalid format inserted", position_start, range.position(range.peak()), range, 7);
+            throw myregex::basic_regex_error<charT>("invalid format inserted", position_start, range.position(range.peak()), range, 7);
         if (rn == &n1) // si el puntero permanece en n1(minimo), significa que el rango es {n1, n1} minimo igual a maximo
             n2 = n1;
         if (n2 < n1)
-            throw myregex::regex_error("range whit min greather than max in this cualifiquer", position_start, range.position(range.peak()), range, 14);
+            throw myregex::basic_regex_error<charT>("range whit min greather than max in this cualifiquer", position_start, range.position(range.peak()), range, 14);
         // Retornar el par de numeros
         return {n1, n2};
     }
@@ -381,14 +381,14 @@ namespace myregex
             range.next();
 
             if (a == charT('-'))
-                throw myregex::regex_error("invalid caracter in class with no initialice range whit caracter", range.position(range.peak(), -1ULL), range, 0);
+                throw myregex::basic_regex_error<charT>("invalid caracter in class with no initialice range whit caracter", range.position(range.peak(), -1ULL), range, 0);
 
             if (a == charT('\\'))                                              // Si es un caracter de escape
                 a = basic_builder<charT, idT>::_S_parser_code_caracter(range); // Ejecutar caracteres de escape
 
             // Si el iterador llego a su fin
             if (range.peak() >= range.end())
-                throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
 
             // Si el caracter proximo no es un caracter '-'
             if (*(range.peak()) != charT('-'))
@@ -399,22 +399,22 @@ namespace myregex
                 auto offset = range.offset(1);
                 char b;
                 if (offset >= range.end())
-                    throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                    throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
                 if ((b = *offset) == charT(']'))
-                    throw myregex::regex_error("termination max incurret", range.position(offset), range, 9);
+                    throw myregex::basic_regex_error<charT>("termination max incurret", range.position(offset), range, 9);
                 range.next();
                 range.next();
                 if (b == charT('\\'))
                     b = basic_builder<charT, idT>::_S_parser_code_caracter(range);
                 if (b <= a)
-                    throw myregex::regex_error("range whit min greather than max in this class", position_start_range, range.position(offset), range, 10);
+                    throw myregex::basic_regex_error<charT>("range whit min greather than max in this class", position_start_range, range.position(offset), range, 10);
                 for (size_t i = a; i <= b; i++)
                     alphabet.insert(charT(i));
             }
         }
         // Si la clase esta invertida se agregan todos los caracteres que no fueron detectados dentro del su definicion
         if (alphabet.empty())
-            throw myregex::regex_error("this class is empty", position_start, range.position(range.peak()), range, 8);
+            throw myregex::basic_regex_error<charT>("this class is empty", position_start, range.position(range.peak()), range, 8);
         if (inverter)
         {
             // Se recorre todos los caracteres
@@ -465,9 +465,9 @@ namespace myregex
                 _T_qAtr = {basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, true, id), {-1ULL}};
                 // Si no termina en la posicion correcta, error
                 if (range.peak() >= range.end())
-                    throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                    throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
                 if (*range.peak() != charT(')'))
-                    throw myregex::regex_error("bad termination in group", range.position(range.peak()), range, 11);
+                    throw myregex::basic_regex_error<charT>("bad termination in group", range.position(range.peak()), range, 11);
                 // Saltamos el final del grupo
                 range.next();
                 // Y agregamos su respectivo cualificador
@@ -480,9 +480,9 @@ namespace myregex
                 _T_qAtr = basic_builder<charT, idT>::_S_parser_nfa_parser_class_expresions(range, nfa);
                 // Si no termina en la posicion correcta, error
                 if (range.peak() >= range.end())
-                    throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                    throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
                 if (*range.peak() != charT(']'))
-                    throw myregex::regex_error("bad termination in class", range.position(range.peak()), range, 12);
+                    throw myregex::basic_regex_error<charT>("bad termination in class", range.position(range.peak()), range, 12);
                 // Saltamos el final del grupo
                 range.next();
                 // Y agregamos su respectivo cualificador
@@ -492,14 +492,14 @@ namespace myregex
             // case charT('^'):
             // {
             //     if (nfa.Q_nfa.back().questbeginline)
-            //         throw myregex::regex_error("do you has mention this status when begin line", range.position(range.peak(), -1ULL), range, 17);
+            //         throw myregex::basic_regex_error<charT>("do you has mention this status when begin line", range.position(range.peak(), -1ULL), range, 17);
             //     nfa.Q_nfa.back().questbeginline = true;
             //     break;
             // }
             // case charT('$'):
             // {
             //     if (nfa.Q_nfa.back().questendline)
-            //         throw myregex::regex_error("do you has mention this status when end line", range.position(range.peak(), -1ULL), range, 18);
+            //         throw myregex::basic_regex_error<charT>("do you has mention this status when end line", range.position(range.peak(), -1ULL), range, 18);
             //     nfa.Q_nfa.back().questendline = true;
             //     break;
             // }
@@ -507,7 +507,7 @@ namespace myregex
             case charT('+'):
             case charT('?'):
             case charT('{'):
-                throw myregex::regex_error("cualifiquer unespect in this operation", range.position(range.peak(), -1ULL), range, 15);
+                throw myregex::basic_regex_error<charT>("cualifiquer unespect in this operation", range.position(range.peak(), -1ULL), range, 15);
             case charT('\\'):
                 c = basic_builder<charT, idT>::_S_parser_code_caracter(range);
             default:
@@ -532,9 +532,9 @@ namespace myregex
     {
         // Preguntamos si el inicio es incorrect y lanzamos un error si es asi
         if (range.peak() == range.end())
-            throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
         if (*(range.peak()) == charT('|'))
-            throw myregex::regex_error("bad start or operation", range.position(range.peak()), range, 14);
+            throw myregex::basic_regex_error<charT>("bad start or operation", range.position(range.peak()), range, 14);
         std::vector<size_t> ends = {};
         // Obtenemos el estado final y lo agregamos
         size_t q0 = nfa.Q_nfa.size();
@@ -544,14 +544,14 @@ namespace myregex
         nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
         // Guardamos el estado final del resultado de la cadena
         if (range.peak() == range.end() || *range.peak() == charT(')'))
-            throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
         ends.push_back(basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup, id));
         // Repite la condicion en caso de ser una operacion or
         while (range.peak() < range.end() && *(range.peak()) == charT('|'))
         {
             range.next();
             if (range.peak() == range.end() || *range.peak() == charT(')'))
-                throw myregex::regex_error("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
             // Agregamos una ∊-transition hacia ese estado
             nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
             // Guardamos el estado final del resultado de la cadena
@@ -617,11 +617,11 @@ namespace myregex
     {
         myregex::basic_nfa<charT, idT> nfa;
         nfa.begin_Q_nfa.push_back(0);
-        nfa.Q_nfa++;
+        nfa.Q_nfa.push_back({});
         for (auto &&expresion : list)
         {
             basic_string_range<charT> range = expresion.second;
-            nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first).first);
+            nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first));
         }
         return nfa;
     }

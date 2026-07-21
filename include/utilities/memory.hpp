@@ -191,21 +191,23 @@ namespace std
     basic_allocator<type>::basic_allocator(const std::initializer_list<type> &list)
         : _M_ptr(nullptr), _M_size(0)
     {
-        if (list.size() == 0)
-            throw std::runtime_error("error: empty initializer_list");
-        _M_ptr = new type[list.size()];
-        std::copy(list.begin(), list.end(), _M_ptr);
-        _M_size = list.size();
+        if (list.size())
+        {
+            _M_ptr = new type[list.size()];
+            std::copy(list.begin(), list.end(), _M_ptr);
+            _M_size = list.size();
+        }
     }
     template <typename type>
     basic_allocator<type>::basic_allocator(const std::vector<type> &list)
         : _M_ptr(nullptr), _M_size(0)
     {
-        if (list.empty())
-            throw std::runtime_error("error: empty vector");
-        _M_ptr = new type[list.size()];
-        std::copy(list.begin(), list.end(), _M_ptr);
-        _M_size = list.size();
+        if (!list.empty())
+        {
+            _M_ptr = new type[list.size()];
+            std::copy(list.begin(), list.end(), _M_ptr);
+            _M_size = list.size();
+        }
     }
 } // namespace std
 

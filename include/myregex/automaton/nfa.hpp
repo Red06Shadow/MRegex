@@ -49,7 +49,7 @@ namespace myregex
         inline const Dictionary &dictionary() const { return Q_dictionary; }
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_nfa<charT, idT> other)
         {
-            out << '{';
+            out << charT('{');
             for (size_t state = 0; state < other.Q_nfa.size(); state++)
             {
                 if (other.Q_nfa[state].valid())
@@ -60,35 +60,41 @@ namespace myregex
                         out << other.Q_nfa[state].get();
                 }
                 else
-                    out << "{}";
-                out << ((state >= other.Q_nfa.size() - 1ULL) ? '}' : ',');
+                    out << charT('{') << charT('}');
+                out << charT((state >= other.Q_nfa.size() - 1ULL) ? '}' : ',');
             }
-            out << ',' << std::endl
-                << '{';
+            out << charT(',') << std::endl
+                << charT('{');
             for (size_t state = 0; state < other.begin_Q_nfa.size(); state++)
-                out << other.begin_Q_nfa[state] << ((state >= (other.begin_Q_nfa.size() - 1ULL)) ? '}' : ',');
-            out << ',' << std::endl
-                << '{';
+                out << other.begin_Q_nfa[state] << charT((state >= (other.begin_Q_nfa.size() - 1ULL)) ? '}' : ',');
+            out << charT(',') << std::endl
+                << charT('{');
             for (typename Transitions::const_iterator it = other.Q_transitions.begin(); it != other.Q_transitions.end(); it++)
             {
                 if (it != other.Q_transitions.begin())
-                    out << ',';
-                out << std::endl
-                    << "    {{" << it->first.first << ',' << it->first.second << "ULL},{";
+                    out << charT(',');
+                if constexpr (std::is_same_v<charT, char>)
+                    out << std::endl << "    {{" << it->first.first << ',' << (long long)it->first.second << "ULL},{";
+                else
+                    out << std::endl << L"    {{" << it->first.first << L',' << (long long)it->first.second << L"ULL},{";
+                
                 for (size_t next = 0; next < it->second.size(); next++)
-                    out << it->second[next] << (next >= it->second.size() - 1ULL ? '}' : ',');
-                out << "}";
+                    out << it->second[next] << charT(next >= it->second.size() - 1ULL ? '}' : ',');
+                out << charT('}');
             }
             out << std::endl
-                << "}," << std::endl
-                << '{';
+                << charT('}') << charT(',') << std::endl
+                << charT('{');
             for (typename Dictionary::const_iterator it = other.Q_dictionary.begin(); it != other.Q_dictionary.end(); it++)
             {
                 if (it != other.Q_dictionary.begin())
-                    out << ',';
-                out << '\'' << *it << '\'';
+                    out << charT(',');
+                if constexpr (std::is_same_v<charT, char>)
+                    out << '\'' << *it << '\'';
+                else
+                    out  << L'L' << L'\'' << *it << L'\'';
             }
-            out << '}';
+            out << charT('}');
             return out;
         }
         size_t size() const;

@@ -28,13 +28,11 @@ namespace myregex
     private:
         Qtable Q_table;
         Transitions Q_transitions;
-        // inline static Transitions build(size_t);
-        // inline static void copy(basic_table &, const basic_table &);
 
     public:
-        basic_table() : Q_transitions({}), Q_table({}) {}
-        basic_table(const Qtable &_states, const Transitions& _transitions) : Q_transitions(_transitions), Q_table(_states) {}
-        basic_table(Qtable &&_states, Transitions&& _transitions) : Q_transitions(std::move(_transitions)), Q_table(std::move(_states)) {}
+        basic_table() : Q_transitions(), Q_table() {}
+        basic_table(const Qtable &_states, const Transitions &_transitions) : Q_transitions(_transitions), Q_table(_states) {}
+        basic_table(Qtable &&_states, Transitions &&_transitions) : Q_transitions(std::move(_transitions)), Q_table(std::move(_states)) {}
         basic_table(const std::vector<myregex::state<idT>> &status) : Q_transitions(status.size() * myregex::basic_table<charT, idT>::dictionary), Q_table(status) {}
         basic_table(std::vector<myregex::state<idT>> &&status) : Q_transitions(status.size() * myregex::basic_table<charT, idT>::dictionary), Q_table(std::move(status)) {}
         basic_table(const basic_table &other) : Q_transitions(other.Q_transitions), Q_table(other.Q_table) {}
@@ -47,7 +45,7 @@ namespace myregex
         inline size_t size() const { return Q_table.size() * myregex::basic_table<charT, idT>::dictionary * sizeof(size_t) + sizeof(Transitions); }
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_table<charT, idT> other)
         {
-            out << '{';
+            out << charT('{');
             for (size_t state = 0; state < other.Q_table.size(); state++)
             {
                 if (other.Q_table[state].valid())
@@ -58,18 +56,23 @@ namespace myregex
                         out << other.Q_table[state].get();
                 }
                 else
-                    out << "{}";
-                out << ((state >= other.Q_table.size() - 1ULL) ? '}' : ',');
+                    out << charT('{') << charT('}');
+                out << charT((state >= other.Q_table.size() - 1ULL) ? '}' : ',');
             }
-            out << ',' << std::endl
-                << '{';
+            out << charT(',') << std::endl
+                << charT('{');
             for (size_t state = 0; state < other.Q_table.size(); state++)
             {
                 for (size_t letter = 0; letter < myregex::basic_table<charT, idT>::dictionary; letter++)
-                    out << (long long)(other.Q_transitions[(state * myregex::basic_table<charT, idT>::dictionary) + letter]) << charT(',');
+                {
+                    if constexpr (std::is_same_v<charT, char>)
+                        out << (long long)(other.Q_transitions[(state * myregex::basic_table<charT, idT>::dictionary) + letter]) << "ULL" << charT(',');
+                    else
+                        out << (long long)(other.Q_transitions[(state * myregex::basic_table<charT, idT>::dictionary) + letter]) << L"ULL" << charT(',');
+                }
                 out << std::endl;
             }
-            out << '}';
+            out << charT('}');
             return out;
         }
         ~basic_table();
