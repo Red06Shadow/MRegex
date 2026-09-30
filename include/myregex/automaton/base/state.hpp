@@ -1,6 +1,6 @@
 #ifndef MYREGEXSTATE
 #define MYREGEXSTATE
-
+//<--...
 namespace myregex
 {
     template <typename idT>
@@ -18,5 +18,5 @@ namespace myregex
     };
 
 } // namespace myregex
-
+//<--...
 #endif

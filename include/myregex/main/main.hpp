@@ -153,7 +153,7 @@ namespace myregex
         inline myregex::caption<charT, idT> match(basic_string_range<charT> &range) const;
 
         inline size_t size() const;
-        inline void export_automaton(std::basic_ostream<charT>& out) const;
+        inline void export_automaton(std::basic_ostream<charT> &out) const;
         inline void view() const { export_automaton(std::selector<charT>::stream()); }
     };
 
@@ -273,7 +273,7 @@ namespace myregex
         if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             return myregex::caption<charT, idT>(_M_string, id);
         else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return myregex::caption<charT, idT>({}, -1ULL);
+            return myregex::caption<charT, idT>({}, {});
     }
 
     template <typename charT, typename idT>
@@ -284,6 +284,18 @@ namespace myregex
         idT id{};
         size_t status = 0;
         size_t acceptance_status = -1ULL;
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        if (status == acceptance_status)
+            ; // Agregue esta condicional para que si el estado actual es igual a un estado de aceptacion(casos como * o +) automaticamente evite la comprobacion
+        else if (_dfa.status()[status].valid())
+        {
+            acceptance_status = status;
+            if constexpr (option == myregex::constants::match_options::_S_first_sequence)
+                return {_M_string, _dfa.accepted_status().at(acceptance_status)};
+            else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                id = _dfa.status()[acceptance_status].get();
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
         while (range.peak() < range.end())
         {
             charT letter = *range.peak();
@@ -292,11 +304,10 @@ namespace myregex
                 break; // No hay transición, rechazar
             status = transition->second;
             _M_string.push_back(letter);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+
             if (status == acceptance_status)
-            {
-                range.next();
-                continue;
-            }
+                ; // Agregue esta condicional para que si el estado actual es igual a un estado de aceptacion(casos como * o +) automaticamente evite la comprobacion
             else if (_dfa.status()[status].valid())
             {
                 acceptance_status = status;
@@ -305,12 +316,13 @@ namespace myregex
                 else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
                     id = _dfa.status()[acceptance_status].get();
             }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
             range.next();
         }
         if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             return myregex::caption<charT, idT>(_M_string, id);
         else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return myregex::caption<charT, idT>({}, -1ULL);
+            return myregex::caption<charT, idT>({}, {});
     }
     template <typename charT, typename idT>
     template <myregex::constants::match_options option>
@@ -320,6 +332,17 @@ namespace myregex
         idT id{};
         size_t status = 0;
         size_t acceptance_status = -1ULL;
+        acceptance_status = status;
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        if (_table.status()[status].valid())
+        {
+            acceptance_status = status;
+            if constexpr (option == myregex::constants::match_options::_S_first_sequence)
+                return {_M_string, _table.accepted_status().at(acceptance_status)};
+            else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
+                id = _table.status()[acceptance_status].get();
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
         while (range.peak() < range.end())
         {
             charT letter = *range.peak();
@@ -328,11 +351,9 @@ namespace myregex
                 break; // No hay transición, rechazar
             status = next_state;
             _M_string.push_back(letter);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
             if (status == acceptance_status)
-            {
-                range.next();
-                continue;
-            }
+                ;
             else if (_table.status()[status].valid())
             {
                 acceptance_status = status;
@@ -341,12 +362,13 @@ namespace myregex
                 else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
                     id = _table.status()[acceptance_status].get();
             }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
             range.next();
         }
         if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             return myregex::caption<charT, idT>(_M_string, id);
         else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return myregex::caption<charT, idT>({}, -1ULL);
+            return myregex::caption<charT, idT>({}, {});
     }
 
     template <typename charT, typename idT>
@@ -386,13 +408,13 @@ namespace myregex
                 return 0; }, _M_expresions);
     }
     template <typename charT, typename idT>
-    void basic_regex<charT, idT>::export_automaton(std::basic_ostream<charT>& out) const {
+    void basic_regex<charT, idT>::export_automaton(std::basic_ostream<charT> &out) const
+    {
         std::visit([&out](auto &&value) -> void
                    {
             using type = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<type, basic_nfa<charT, idT>> || std::is_same_v<type, basic_dfa<charT, idT>> || std::is_same_v<type, basic_table<charT, idT>>)
-                out << value; 
-            }, _M_expresions);
+                out << value; }, _M_expresions);
     }
 } // namespace myregex
 

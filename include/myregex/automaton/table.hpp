@@ -1,13 +1,14 @@
 #ifndef _TABLEDFA
 #define _TABLEDFA
 
+#include <myregex/automaton/base/state.hpp>
+#include <utilities/memory.hpp>
+//<--...
 #include <corecrt.h>
 #include <type_traits>
 #include <iostream>
 #include <vector>
 #include <math.h>
-#include <myregex/automaton/base/state.hpp>
-#include <utilities/memory.hpp>
 
 #define DEBUG false
 
@@ -111,5 +112,5 @@ myregex::basic_table<charT, idT> &myregex::basic_table<charT, idT>::operator=(ba
 }
 template <typename charT, typename idT>
 myregex::basic_table<charT, idT>::~basic_table() {}
-
+//<--...
 #endif
