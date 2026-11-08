@@ -20,14 +20,14 @@ namespace myregex
 
     private: // Funtions regex -> myregex::basic_nfa
         // Funciones para el parseo de expresiones regex a myregex::basic_nfa
-        static charT _S_parser_code_caracter_hexunicode(basic_string_range<charT> &, const unsigned char);
-        static charT _S_parser_code_caracter_octal(basic_string_range<charT> &);
-        static charT _S_parser_code_caracter(basic_string_range<charT> &);
-        static _M_range_cualifiquer _S_parser_cualifiquer_range(basic_string_range<charT> &);
-        static void _S_parser_cualifiquer(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, const _M_begin_transitions &, bool);
-        static _M_begin_transitions _S_parser_nfa_parser_class_expresions(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &);
-        static size_t _S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, idT);
-        static size_t _S_build_nfa_parser_or_expresions(basic_string_range<charT> &, myregex::basic_nfa<charT, idT> &, bool, idT);
+        static charT _S_parser_code_caracter_hexunicode(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&, const unsigned char);
+        static charT _S_parser_code_caracter_octal(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&);
+        static charT _S_parser_code_caracter(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&);
+        static _M_range_cualifiquer _S_parser_cualifiquer_range(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&);
+        static void _S_parser_cualifiquer(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&, myregex::basic_nfa<charT, idT> &, const _M_begin_transitions &, bool);
+        static _M_begin_transitions _S_parser_nfa_parser_class_expresions(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&, myregex::basic_nfa<charT, idT> &);
+        static size_t _S_build_nfa_parser_regular_expresions_basic(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&, myregex::basic_nfa<charT, idT> &, bool, idT);
+        static size_t _S_build_nfa_parser_or_expresions(typename std::basic_string_view<charT>::const_iterator&, const std::basic_string_view<charT>&, myregex::basic_nfa<charT, idT> &, bool, idT);
 
         constexpr inline static size_t _S_transition(charT caracter)
         {
@@ -53,10 +53,10 @@ namespace myregex
         std::variant<basic_nfa<charT, idT>, basic_dfa<charT, idT>, basic_table<charT, idT>> _M_expresions;
 
     public:
-        basic_builder(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
-        basic_builder(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
-        static myregex::basic_nfa<charT, idT> build_nfa(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list);
-        static myregex::basic_nfa<charT, idT> build_nfa(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list);
+        basic_builder(const std::initializer_list<std::pair<idT, std::basic_string_view<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
+        basic_builder(const std::vector<std::pair<idT, std::basic_string_view<charT>>> &list) { _M_expresions = std::move(build_nfa(list)); }
+        static myregex::basic_nfa<charT, idT> build_nfa(const std::initializer_list<std::pair<idT, std::basic_string_view<charT>>> &list);
+        static myregex::basic_nfa<charT, idT> build_nfa(const std::vector<std::pair<idT, std::basic_string_view<charT>>> &list);
         static myregex::basic_dfa<charT, idT> build_dfa(const basic_nfa<charT, idT> &nfa);
         static myregex::basic_table<charT, idT> build_table(const basic_dfa<charT, idT> &dfa);
         myregex::basic_builder<charT, idT> &convert_to_dfa();

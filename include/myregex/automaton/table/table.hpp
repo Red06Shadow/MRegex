@@ -1,19 +1,57 @@
 #ifndef _TABLEDFA
 #define _TABLEDFA
 
-#include <myregex/automaton/base/state.hpp>
-#include <utilities/memory.hpp>
 //<--...
+#include <math.h>
 #include <corecrt.h>
 #include <type_traits>
 #include <iostream>
 #include <vector>
-#include <math.h>
+#include <myregex/automaton/base/state.hpp>
 
 namespace myregex
 {
     template <typename charT, typename idT>
     class basic_builder;
+
+    /// @brief Estructura para manejar la tabla de transiciones, posteriormente podria mejorarse para permitir rangos combinado con arreglos
+    class transitions
+    {
+    public:
+        using iterator = size_t*;
+        using const_iterator = const size_t*;
+    private:
+        size_t *_M_ptr;
+        size_t _M_size;
+    public:
+        transitions() : _M_ptr(nullptr), _M_size(0) {}
+        transitions(const std::initializer_list<size_t> &list);
+        transitions(const std::vector<size_t> &list);
+        explicit transitions(size_t size) : _M_size(size), _M_ptr(new size_t[size]) {}
+        transitions(const transitions &other);
+        transitions(transitions &&other) noexcept;
+        transitions& operator=(const transitions &other);
+        transitions& operator=(transitions &&other) noexcept;
+        inline size_t& operator[](size_t index) { return _M_ptr[index]; }
+        inline size_t operator[](size_t index) const { return _M_ptr[index]; }
+        inline size_t& at(size_t index) {
+            if (index >= _M_size)
+                throw std::out_of_range("index out of range: " + std::to_string(index)); 
+            return _M_ptr[index]; 
+        }
+        inline size_t at(size_t index) const { 
+            if (index >= _M_size)
+                throw std::out_of_range("index out of range: " + std::to_string(index)); 
+            return _M_ptr[index]; 
+        }
+        iterator begin() { return _M_ptr; }
+        const_iterator begin() const { return _M_ptr; }
+        iterator end() { return _M_ptr + _M_size; }
+        const_iterator end() const { return _M_ptr + _M_size; }
+        inline size_t size() const { return _M_size; }
+        inline bool empty() const { return _M_size == 0; }
+        ~transitions();
+    };
 
     template <typename charT, typename idT>
     class basic_table
@@ -22,16 +60,15 @@ namespace myregex
 
     public:
         using Qtable = std::vector<myregex::state<idT>>;
-        using Transitions = std::basic_allocator<size_t>;
 
     private:
         Qtable Q_table;
-        Transitions Q_transitions;
+        transitions Q_transitions;
 
     public:
         basic_table() : Q_transitions(), Q_table() {}
-        basic_table(const Qtable &_states, const Transitions &_transitions) : Q_transitions(_transitions), Q_table(_states) {}
-        basic_table(Qtable &&_states, Transitions &&_transitions) : Q_transitions(std::move(_transitions)), Q_table(std::move(_states)) {}
+        basic_table(const Qtable &_states, const transitions &_transitions) : Q_transitions(_transitions), Q_table(_states) {}
+        basic_table(Qtable &&_states, transitions &&_transitions) : Q_transitions(std::move(_transitions)), Q_table(std::move(_states)) {}
         basic_table(const std::vector<myregex::state<idT>> &status) : Q_transitions(status.size() * myregex::basic_table<charT, idT>::dictionary), Q_table(status) {}
         basic_table(std::vector<myregex::state<idT>> &&status) : Q_transitions(status.size() * myregex::basic_table<charT, idT>::dictionary), Q_table(std::move(status)) {}
         basic_table(const basic_table &other) : Q_transitions(other.Q_transitions), Q_table(other.Q_table) {}
@@ -39,9 +76,9 @@ namespace myregex
         basic_table &operator=(const basic_table &);
         basic_table &operator=(basic_table &&);
         inline const Qtable &status() const { return Q_table; }
-        inline const Transitions &transitions() const { return Q_transitions; }
+        inline const transitions &transitions() const { return Q_transitions; }
         inline static constexpr size_t dictionary = std::pow(256ULL, sizeof(charT));
-        inline size_t size() const { return Q_table.size() * myregex::basic_table<charT, idT>::dictionary * sizeof(size_t) + sizeof(Transitions); }
+        inline size_t size() const { return Q_table.size() * myregex::basic_table<charT, idT>::dictionary * sizeof(size_t) + sizeof(transitions); }
         friend std::basic_ostream<charT> &operator<<(std::basic_ostream<charT> &out, basic_table<charT, idT> other)
         {
             out << charT('{');

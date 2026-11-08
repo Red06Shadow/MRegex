@@ -7,7 +7,7 @@ myregex::basic_builder<charT, idT> &myregex::basic_builder<charT, idT>::convert_
     if constexpr (std::is_same_v<type, basic_nfa<charT, idT>>)
         return build_dfa(value);
     else
-        throw myregex::basic_regex_error<charT>("imposible operation whit not nfa struct", myregex::error_type::_S_runtime_error, 20); }, _M_expresions);
+        throw std::runtime_error("imposible operation whit not nfa struct"); }, _M_expresions);
     _M_expresions = _M_provitional;
     return *this;
 }
@@ -20,20 +20,20 @@ myregex::basic_builder<charT, idT> &myregex::basic_builder<charT, idT>::convert_
     if constexpr (std::is_same_v<type, basic_dfa<charT, idT>>)
         return build_table(value);
     else
-        throw myregex::basic_regex_error<charT>("imposible operation whit not dfa struct", myregex::error_type::_S_runtime_error, 21); }, _M_expresions);
+        throw std::runtime_error("imposible operation whit not dfa struct"); }, _M_expresions);
     _M_expresions = _M_provitional;
     return *this;
 }
 
 template <typename charT, typename idT>
-charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(basic_string_range<charT> &range, const unsigned char _S)
+charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str, const unsigned char _S)
 {
     charT result;
     for (charT i = 0; i < _S; i++)
     {
-        if (range.peak() >= range.end())
-            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-        charT caracter = *range.peak();
+        if (iterator >= str.end())
+            throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() - 1ULL, str, 0x0000);
+        charT caracter = *iterator;
         if (caracter >= charT('a') && caracter <= charT('f'))
             result = result * 16 + (caracter - charT('a') + 10);
         else if (caracter >= charT('A') && caracter <= charT('F'))
@@ -41,78 +41,78 @@ charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(bas
         else if (caracter >= charT('0') && caracter <= charT('9'))
             result = result * 16 + (caracter - charT('0'));
         else
-            throw myregex::basic_regex_error<charT>("caracter no permitido en el formato de caracter unicode", range.position(range.peak()), range, 1);
-        range.next();
+            throw myregex::basic_lexicar_error<charT>("caracter no permitido en el formato de caracter unicode", iterator, str, 0x0001);
+        iterator++;
     }
     return result;
 }
 
 template <typename charT, typename idT>
-charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter_octal(basic_string_range<charT> &range)
+charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter_octal(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str)
 {
     char result;
     for (char i = 0; i < 3; i++)
     {
-        if (range.peak() >= range.end() && i < 1)
-            throw myregex::basic_regex_error<charT>("formato de caracter octal incorrecto", range.position(range.end(), 1ULL), range, 2);
-        char caracter = *range.peak();
+        if (iterator >= str.end() && i < 1)
+            throw myregex::basic_lexicar_error<charT>("formato de caracter octal incorrecto", str.end() - 1ULL, str, 0x0002);
+        char caracter = *iterator;
         if (caracter >= '0' && caracter <= '7')
             result = result * 8 + (caracter - '0');
         else
             break;
-        range.next();
+        iterator++;
     }
     return result;
 }
 
 template <typename charT, typename idT>
-charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter(basic_string_range<charT> &range)
+charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str)
 {
     charT c;
-    if (range.peak() >= range.end())
-        throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-    switch (c = *range.peak())
+    if (iterator >= str.end())
+        throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() - 1ULL, str, 0x0000);
+    switch (c = *iterator)
     {
     case charT('n'):
-        range.next();
+        iterator++;
         return charT('\n');
         break;
     case charT('t'):
-        range.next();
+        iterator++;
         return charT('\t');
         break;
     case charT('v'):
-        range.next();
+        iterator++;
         return charT('\v');
         break;
     case charT('f'):
-        range.next();
+        iterator++;
         return charT('\f');
         break;
     case charT('b'):
-        range.next();
+        iterator++;
         return charT('\b');
         break;
     case charT('r'):
-        range.next();
+        iterator++;
         return charT('\r');
         break;
     case charT('x'):
-        range.next();
-        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(range, 2);
+        iterator++;
+        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(iterator, str, 2);
         break;
     case charT('u'):
-        range.next();
-        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(range, 4);
+        iterator++;
+        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(iterator, str, 4);
         break;
     case charT('U'):
-        range.next();
-        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(range, 8);
+        iterator++;
+        return basic_builder<charT, idT>::_S_parser_code_caracter_hexunicode(iterator, str, 8);
         break;
     default:
         if ('0' <= c && c <= '7')
-            return basic_builder<charT, idT>::_S_parser_code_caracter_octal(range);
-        range.next();
+            return basic_builder<charT, idT>::_S_parser_code_caracter_octal(iterator, str);
+        iterator++;
         return c;
         break;
     }
@@ -125,16 +125,16 @@ charT myregex::basic_builder<charT, idT>::_S_parser_code_caracter(basic_string_r
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename charT, typename idT>
-typename myregex::basic_builder<charT, idT>::_M_range_cualifiquer myregex::basic_builder<charT, idT>::_S_parser_cualifiquer_range(basic_string_range<charT> &range)
+typename myregex::basic_builder<charT, idT>::_M_range_cualifiquer myregex::basic_builder<charT, idT>::_S_parser_cualifiquer_range(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str)
 {
     size_t n1 = 0;    // minimo
     size_t n2 = 0;    // maximo
     size_t *rn = &n1; // puntero al numero actual
     charT caracter;
     bool invalid = true; // Determina si es valido el resultado
-    size_t position_start = range.position(range.peak(), -1ULL);
+    typename std::basic_string_view<charT>::const_iterator start = iterator - 1ULL;
     // Recorremos la cadena de caracteres
-    while (range.peak() < range.end() and (caracter = *range.peak()) != '}')
+    while (iterator < str.end() and (caracter = *iterator) != '}')
     {
         // Si es un numero
         if (charT('0') <= caracter && caracter <= charT('9'))
@@ -148,45 +148,45 @@ typename myregex::basic_builder<charT, idT>::_M_range_cualifiquer myregex::basic
         {
             // Y el rn apunta a el numero 2(maximo)
             if (invalid)
-                throw myregex::basic_regex_error<charT>("min value no inserted", range.position(range.peak()), range, 16);
+                throw myregex::basic_lexicar_error<charT>("min value no inserted", iterator, str, 0x0010);
             if (rn == &n2)
-                throw myregex::basic_regex_error<charT>("invalid subdivision", range.position(range.peak()), range, 4);
+                throw myregex::basic_lexicar_error<charT>("invalid subdivision", iterator, str, 0x0004);
             // Cambiamos el puntero de n1(minimo) a n2(maximo)
             rn = &n2;
             // Y activamos la invalidacion
             invalid = true;
         }
         else // Si no solo se emite el error de caracter invalido
-            throw myregex::basic_regex_error<charT>("invalid caracter inserted", range.position(range.peak()), range, 5);
-        range.next(); // Y por ultimo pasamos al siguiente
+            throw myregex::basic_lexicar_error<charT>("invalid caracter inserted", iterator, str, 0x0005);
+        iterator++; // Y por ultimo pasamos al siguiente
     }
-    if (range.peak() == range.end()) // Si no se llego al final del cualificador, emitir error
-        throw myregex::basic_regex_error<charT>("unespect termination of range", range.position(range.end(), 1ULL), range, 6);
+    if (iterator == str.end()) // Si no se llego al final del cualificador, emitir error
+        throw myregex::basic_lexicar_error<charT>("unespect termination of range", str.end(), str, 0x0006);
     if (invalid) // si es invalida, emitir tambien un error
-        throw myregex::basic_regex_error<charT>("invalid format inserted", position_start, range.position(range.peak()), range, 7);
+        throw myregex::basic_lexicar_error<charT>("invalid format inserted", start, iterator, str, 0x0007);
     if (rn == &n1) // si el puntero permanece en n1(minimo), significa que el rango es {n1, n1} minimo igual a maximo
         n2 = n1;
     if (n2 < n1)
-        throw myregex::basic_regex_error<charT>("range whit min greather than max in this cualifiquer", position_start, range.position(range.peak()), range, 14);
+        throw myregex::basic_lexicar_error<charT>("range whit min greather than max in this cualifiquer", start, iterator, str, 0x000E);
     // Retornar el par de numeros
     return {n1, n2};
 }
 
 template <typename charT, typename idT>
-void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, const basic_builder<charT, idT>::_M_begin_transitions &_T_qAtr, bool isGroup)
+void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str, basic_nfa<charT, idT> &nfa, const basic_builder<charT, idT>::_M_begin_transitions &_T_qAtr, bool isGroup)
 {
     charT c = 0;
     // Si el rango llega al final salta a la sentemcia por defecto del switch
-    if (range.peak() >= range.end())
+    if (iterator >= str.end())
         goto labelForEnd;
     // Si no obtenemos el caracter en esa posicion
-    c = *range.peak();
+    c = *iterator;
     switch (c)
     {
     case charT('?'):
     {
         // Si se cumple se agrega la opcionalidad al estado
-        range.next();
+        iterator++;
         // Primera se agregan las transiciones generadas siempre y cuando no sean un grupo
         if (!isGroup)
             for (auto &&transition : _T_qAtr.second)
@@ -198,7 +198,7 @@ void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(basic_string_rang
     case charT('*'):
     {
         // Si se cumple se agrega la repeticion de cero a multiples veces
-        range.next();
+        iterator++;
         // Si es un grupo las transiciones de repeticion se realizan desde el final hasta el principio
         if (isGroup)
             for (auto &&transition : _T_qAtr.second)
@@ -212,7 +212,7 @@ void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(basic_string_rang
     case charT('+'):
     {
         // Si se cumple se agrega la repeticion de cero a multiples veces
-        range.next();
+        iterator++;
         if (!isGroup)
             for (auto &&transition : _T_qAtr.second)
                 nfa.Q_transitions[{_T_qAtr.first, transition}].push_back(nfa.Q_nfa.size());
@@ -221,9 +221,9 @@ void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(basic_string_rang
     }
     case charT('{'):
     {
-        range.next();
-        _M_range_cualifiquer cualifiquer_range = basic_builder<charT, idT>::_S_parser_cualifiquer_range(range);
-        range.next();
+        iterator++;
+        _M_range_cualifiquer cualifiquer_range = basic_builder<charT, idT>::_S_parser_cualifiquer_range(iterator, str);
+        iterator++;
         if (isGroup)
         {
             size_t n_state = nfa.Q_nfa.size() - _T_qAtr.first;
@@ -284,65 +284,65 @@ void myregex::basic_builder<charT, idT>::_S_parser_cualifiquer(basic_string_rang
 }
 
 template <typename charT, typename idT>
-typename myregex::basic_builder<charT, idT>::_M_begin_transitions myregex::basic_builder<charT, idT>::_S_parser_nfa_parser_class_expresions(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa)
+typename myregex::basic_builder<charT, idT>::_M_begin_transitions myregex::basic_builder<charT, idT>::_S_parser_nfa_parser_class_expresions(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str, basic_nfa<charT, idT> &nfa)
 {
     size_t qA = nfa.Q_nfa.size();
     std::vector<size_t> transitions = {};
     std::unordered_set<charT> alphabet = {};
     bool inverter = false;
-    size_t position_start = range.position(range.peak(), -1ULL);
+    typename std::basic_string_view<charT>::const_iterator start = iterator - 1ULL;
 
     nfa.Q_nfa.push_back({});
     // Chequeamos si es una clase invertida
-    if (*range.peak() == charT('^'))
+    if (*iterator == charT('^'))
     {
         // Si lo es hacer operaciones de inversion, por ahora no se ha implementado
         inverter = true;
-        range.next();
+        iterator++;
     }
     charT a;
     // Recorremos la cadena hasta llegar el final
-    while (range.peak() < range.end() and (a = *range.peak()) != charT(']'))
+    while (iterator < str.end() and (a = *iterator) != charT(']'))
     {
         // Pasamos al siguiente valor
-        size_t position_start_range = range.position(range.peak());
-        range.next();
+        typename std::basic_string_view<charT>::const_iterator start_range = iterator;
+        iterator++;
 
         if (a == charT('-'))
-            throw myregex::basic_regex_error<charT>("invalid caracter in class with no initialice range whit caracter", range.position(range.peak(), -1ULL), range, 0);
+            throw myregex::basic_lexicar_error<charT>("invalid caracter in class with no initialice range whit caracter", iterator -1ULL, str, 0x0000);
 
         if (a == charT('\\'))                                              // Si es un caracter de escape
-            a = basic_builder<charT, idT>::_S_parser_code_caracter(range); // Ejecutar caracteres de escape
+            a = basic_builder<charT, idT>::_S_parser_code_caracter(iterator, str); // Ejecutar caracteres de escape
 
         // Si el iterador llego a su fin
-        if (range.peak() >= range.end())
-            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+        if (iterator >= str.end())
+            throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() -1ULL, str, 0x0000);
 
         // Si el caracter proximo no es un caracter '-'
-        if (*(range.peak()) != charT('-'))
+        if (*(iterator) != charT('-'))
             alphabet.insert(a); // Solamente insertar el caracter actual
         else
         {
             // En caso contrario obtenemos el rango de transiciones
-            auto offset = range.offset(1);
+            auto offset = iterator + 1ULL;
             char b;
-            if (offset >= range.end())
-                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+            if (offset >= str.end())
+                throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() -1ULL, str, 0x0000);
             if ((b = *offset) == charT(']'))
-                throw myregex::basic_regex_error<charT>("termination max incurret", range.position(offset), range, 9);
-            range.next();
-            range.next();
+                throw myregex::basic_lexicar_error<charT>("termination max incurret", offset, str, 0x0009);
+            iterator++;
+            iterator++;
             if (b == charT('\\'))
-                b = basic_builder<charT, idT>::_S_parser_code_caracter(range);
+                b = basic_builder<charT, idT>::_S_parser_code_caracter(iterator, str);
             if (_S_transition(b) <= _S_transition(a))
-                throw myregex::basic_regex_error<charT>("range whit min greather than max in this class", position_start_range, range.position(offset), range, 10);
+                throw myregex::basic_lexicar_error<charT>("range whit min greather than max in this class", start_range, offset, str, 0x000A);
             for (size_t i = _S_transition(a); i <= _S_transition(b); i++)
                 alphabet.insert(charT(i));
         }
     }
     // Si la clase esta invertida se agregan todos los caracteres que no fueron detectados dentro del su definicion
     if (alphabet.empty())
-        throw myregex::basic_regex_error<charT>("this class is empty", position_start, range.position(range.peak()), range, 8);
+        throw myregex::basic_lexicar_error<charT>("this class is empty", start, iterator, str, 0x0008);
     if (inverter)
     {
         // Se recorre todos los caracteres
@@ -371,63 +371,63 @@ typename myregex::basic_builder<charT, idT>::_M_begin_transitions myregex::basic
 }
 
 template <typename charT, typename idT>
-size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
+size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
 {
     // Dado el rango de caracteres
-    while (range.peak() < range.end())
+    while (iterator < str.end())
     {
         // Obtenemos el caracter actual
         basic_builder<charT, idT>::_M_begin_transitions _T_qAtr;
-        charT c = *range.peak();
+        charT c = *iterator;
         if (c == charT('|') or c == charT(')'))
             break;
         // Y pasamos al siguiente
-        range.next();
+        iterator++;
         // Segun el caracter que sea
         switch (c)
         {
         case charT('('):
         {
-            size_t position_start = range.position(range.peak(), -1ULL);
+            typename std::basic_string_view<charT>::const_iterator position_start = static_cast<typename std::basic_string_view<charT>::const_iterator>(iterator - 1ULL);
             // Genera un grupo de reglas, se utiliza la recursion de la fincion recursiva
-            _T_qAtr = {basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, true, id), {-1ULL}};
+            _T_qAtr = {basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(iterator, str, nfa, true, id), {-1ULL}};
             // Si no termina en la posicion correcta, error
-            if (range.peak() >= range.end())
-                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-            if (*range.peak() != charT(')'))
-                throw myregex::basic_regex_error<charT>("bad termination in group", range.position(range.peak()), range, 11);
+            if (iterator >= str.end())
+                throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() -1ULL, str, 0x0000);
+            if (*iterator != charT(')'))
+                throw myregex::basic_lexicar_error<charT>("bad termination in group", iterator, str, 0x000B);
             // Saltamos el final del grupo
-            range.next();
+            iterator++;
             // Y agregamos su respectivo cualificador
-            basic_builder<charT, idT>::_S_parser_cualifiquer(range, nfa, _T_qAtr, true);
+            basic_builder<charT, idT>::_S_parser_cualifiquer(iterator, str, nfa, _T_qAtr, true);
             break;
         }
         case charT('['):
         {
             // Genera un estado para clases de caracteres
-            _T_qAtr = basic_builder<charT, idT>::_S_parser_nfa_parser_class_expresions(range, nfa);
+            _T_qAtr = basic_builder<charT, idT>::_S_parser_nfa_parser_class_expresions(iterator, str, nfa);
             // Si no termina en la posicion correcta, error
-            if (range.peak() >= range.end())
-                throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-            if (*range.peak() != charT(']'))
-                throw myregex::basic_regex_error<charT>("bad termination in class", range.position(range.peak()), range, 12);
+            if (iterator >= str.end())
+                throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() - 1ULL, str, 0x0000);
+            if (*iterator != charT(']'))
+                throw myregex::basic_lexicar_error<charT>("bad termination in class", iterator, str, 0x000C);
             // Saltamos el final del grupo
-            range.next();
+            iterator++;
             // Y agregamos su respectivo cualificador
-            basic_builder<charT, idT>::_S_parser_cualifiquer(range, nfa, _T_qAtr, false);
+            basic_builder<charT, idT>::_S_parser_cualifiquer(iterator, str, nfa, _T_qAtr, false);
             break;
         }
         // case charT('^'):
         // {
         //     if (nfa.Q_nfa.back().questbeginline)
-        //         throw myregex::basic_regex_error<charT>("do you has mention this status when begin line", range.position(range.peak(), -1ULL), range, 17);
+        //         throw myregex::basic_lexicar_error<charT>("do you has mention this status when begin line", range.position(iterator, -1ULL), range, 17);
         //     nfa.Q_nfa.back().questbeginline = true;
         //     break;
         // }
         // case charT('$'):
         // {
         //     if (nfa.Q_nfa.back().questendline)
-        //         throw myregex::basic_regex_error<charT>("do you has mention this status when end line", range.position(range.peak(), -1ULL), range, 18);
+        //         throw myregex::basic_lexicar_error<charT>("do you has mention this status when end line", range.position(iterator, -1ULL), range, 18);
         //     nfa.Q_nfa.back().questendline = true;
         //     break;
         // }
@@ -435,9 +435,9 @@ size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresion
         case charT('+'):
         case charT('?'):
         case charT('{'):
-            throw myregex::basic_regex_error<charT>("cualifiquer unespect in this operation", range.position(range.peak(), -1ULL), range, 15);
+            throw myregex::basic_lexicar_error<charT>("cualifiquer unespect in this operation", iterator - 1ULL, str, 0x000F);
         case charT('\\'):
-            c = basic_builder<charT, idT>::_S_parser_code_caracter(range);
+            c = basic_builder<charT, idT>::_S_parser_code_caracter(iterator, str);
         default:
         {
             // Simplemente creamos el estado y agregamos la trsnicion
@@ -445,7 +445,7 @@ size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresion
             nfa.Q_dictionary.insert(c);
             nfa.Q_nfa.push_back({});
             // Y agregamos su respectivo cualificador
-            basic_builder<charT, idT>::_S_parser_cualifiquer(range, nfa, {qA, {myregex::basic_builder<charT, idT>::_S_transition(c)}}, false);
+            basic_builder<charT, idT>::_S_parser_cualifiquer(iterator, str, nfa, {qA, {myregex::basic_builder<charT, idT>::_S_transition(c)}}, false);
             break;
         }
         }
@@ -456,13 +456,13 @@ size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresion
 }
 
 template <typename charT, typename idT>
-size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(basic_string_range<charT> &range, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
+size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(typename std::basic_string_view<charT>::const_iterator& iterator, const std::basic_string_view<charT>& str, basic_nfa<charT, idT> &nfa, bool isGroup, idT id)
 {
     // Preguntamos si el inicio es incorrect y lanzamos un error si es asi
-    if (range.peak() == range.end())
-        throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-    if (*(range.peak()) == charT('|'))
-        throw myregex::basic_regex_error<charT>("bad start or operation", range.position(range.peak()), range, 14);
+    if (iterator == str.end())
+        throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() - 1ULL, str, 0x0000);
+    if (*(iterator) == charT('|'))
+        throw myregex::basic_lexicar_error<charT>("bad start or operation", iterator, str, 0x000E);
     std::vector<size_t> ends = {};
     // Obtenemos el estado final y lo agregamos
     size_t q0 = nfa.Q_nfa.size();
@@ -471,19 +471,19 @@ size_t myregex::basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(bas
     // Agregamos una ∊-transition hacia ese estado
     nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
     // Guardamos el estado final del resultado de la cadena
-    if (range.peak() == range.end() || *range.peak() == charT(')'))
-        throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
-    ends.push_back(basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup, id));
+    if (iterator == str.end() || *iterator == charT(')'))
+        throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() -1ULL, str, 0x0000);
+    ends.push_back(basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(iterator, str, nfa, isGroup, id));
     // Repite la condicion en caso de ser una operacion or
-    while (range.peak() < range.end() && *(range.peak()) == charT('|'))
+    while (iterator < str.end() && *(iterator) == charT('|'))
     {
-        range.next();
-        if (range.peak() == range.end() || *range.peak() == charT(')'))
-            throw myregex::basic_regex_error<charT>("end termination for regular expresion", range.position(range.end(), -1ULL), range, 0);
+        iterator++;
+        if (iterator == str.end() || *iterator == charT(')'))
+            throw myregex::basic_lexicar_error<charT>("end termination for regular expresion", str.end() -1ULL, str, 0x0000);
         // Agregamos una ∊-transition hacia ese estado
         nfa.Q_transitions[{q0, -1ULL}].push_back(nfa.Q_nfa.size());
         // Guardamos el estado final del resultado de la cadena
-        ends.push_back(basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(range, nfa, isGroup, id));
+        ends.push_back(basic_builder<charT, idT>::_S_build_nfa_parser_regular_expresions_basic(iterator, str, nfa, isGroup, id));
         // Si se detuvo en una tuberia volver a realizar el procedimiento
     }
     // Para cada estado final se le agregara una ∊-transition al estado de union de la tuberia
@@ -541,28 +541,28 @@ std::set<size_t> myregex::basic_builder<charT, idT>::_S_move(const std::set<size
 }
 
 template <typename charT, typename idT>
-myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::initializer_list<std::pair<idT, std::__cxx11::basic_string<charT>>> &list)
+myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::initializer_list<std::pair<idT, std::basic_string_view<charT>>> &list)
 {
     myregex::basic_nfa<charT, idT> nfa;
     nfa.begin_Q_nfa.push_back(0);
     nfa.Q_nfa.push_back({});
     for (auto &&expresion : list)
     {
-        basic_string_range<charT> range = expresion.second;
-        nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first));
+        std::basic_string_view<char>::const_iterator begin = expresion.second.begin();
+        nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(begin, expresion.second, nfa, false, expresion.first));
     }
     return nfa;
 }
 template <typename charT, typename idT>
-myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::vector<std::pair<idT, std::__cxx11::basic_string<charT>>> &list)
+myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(const std::vector<std::pair<idT, std::basic_string_view<charT>>> &list)
 {
     myregex::basic_nfa<charT, idT> nfa;
     nfa.begin_Q_nfa.push_back(0);
     nfa.Q_nfa.push_back({});
     for (auto &&expresion : list)
     {
-        basic_string_range<charT> range = expresion.second;
-        nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(range, nfa, false, expresion.first));
+        std::basic_string_view<char>::const_iterator begin = expresion.second.begin();
+        nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(begin, expresion.second, nfa, false, expresion.first));
     }
     return nfa;
 }
@@ -611,7 +611,7 @@ myregex::basic_dfa<charT, idT> myregex::basic_builder<charT, idT>::build_dfa(con
 template <typename charT, typename idT>
 myregex::basic_table<charT, idT> myregex::basic_builder<charT, idT>::build_table(const basic_dfa<charT, idT> &dfa)
 {
-    std::basic_allocator<size_t> ttable = std::basic_allocator<size_t>(dfa.size() * basic_table<charT, idT>::dictionary);
+    myregex::transitions ttable = myregex::transitions(dfa.size() * basic_table<charT, idT>::dictionary);
     for (size_t state = 0; state < dfa.status().size(); state++)
     {
         for (size_t letter = 0; letter < basic_table<charT, idT>::dictionary; letter++)
