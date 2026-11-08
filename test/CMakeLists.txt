@@ -9,6 +9,8 @@
 # # 3. Descargar y añadir al proyecto
 # FetchContent_MakeAvailable(googletest)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/debug)
+
 add_executable(tests test1.cpp)
 target_link_libraries(tests
     myregex

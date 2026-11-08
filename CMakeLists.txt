@@ -1,32 +1,50 @@
-cmake_minimum_required(VERSION 3.15)
-project(myregex 
-        VERSION 0.1.0 
-        LANGUAGES CXX
-)
-
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/debug)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/release)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/release)
+cmake_minimum_required(VERSION 3.14)
+project(myregex VERSION 1.0.0 LANGUAGES CXX)
 
 add_library(myregex INTERFACE)
+add_library(myregex::myregex ALIAS myregex)  # namespace recomendado
 
-target_include_directories(myregex 
-    INTERFACE 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
+target_include_directories(myregex INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_compile_features(myregex INTERFACE cxx_std_17)
 
-target_compile_definitions(myregex INTERFACE MYREGEX_MAJOR_VERSION=1 MYREGEX_MINOR_VERSION=0)
-
-install(DIRECTORY include/
-DESTINATION include
-FILES_MATCHING PATTERN "*.hpp")
-
-option(BUILD_TESTS "Build tests" ON)
 if(BUILD_TESTS)
         enable_testing()
         add_subdirectory(test)
 endif()
+
+# --- Reglas de instalación ---
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(TARGETS myregex EXPORT myregexTargets)
+
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT myregexTargets
+    FILE      myregexTargets.cmake
+    NAMESPACE myregex::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/myregex
+)
+
+# Genera myregexConfigVersion.cmake (para control de versiones en find_package)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/myregexConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Genera myregexConfig.cmake
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/myregexConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/myregexConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/myregex
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/myregexConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/myregexConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/myregex
+)
