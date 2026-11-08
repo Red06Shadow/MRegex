@@ -10,8 +10,6 @@
 #include <type_traits>
 #include <myregex/automaton/base/state.hpp>
 
-#define DEBUG false
-
 namespace myregex
 {
     template <typename charT, typename idT>
@@ -71,15 +69,6 @@ namespace myregex
         ~basic_dfa() {}
         friend basic_builder<charT, idT>;
     };
-    template <typename charT, typename idT>
-    size_t basic_dfa<charT, idT>::size() const
-    {
-        size_t _size = 0;
-        _size += sizeof(size_t);
-        _size += Q_dfa.size() * (sizeof(myregex::state<idT>) * 2) + sizeof(Qdfa);
-        _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
-        return _size;
-    }
     template <typename idT>
     using CompatibleDfa = basic_dfa<char, idT>;
     template <typename idT>
@@ -90,5 +79,7 @@ namespace myregex
     template <typename idT>
     using wdfa = basic_dfa<wchar_t, idT>;
 } // namespace myregex
+
+#include "dfa.tpp"
 
 #endif

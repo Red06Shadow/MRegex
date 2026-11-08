@@ -9,8 +9,6 @@
 #include <set>
 #include <myregex/automaton/base/state.hpp>
 
-#define DEBUG false
-
 namespace myregex
 {
 
@@ -101,16 +99,6 @@ namespace myregex
         ~basic_nfa() {}
     };
 
-    template <typename charT, typename idT>
-    size_t basic_nfa<charT, idT>::size() const
-    {
-        size_t _size = 0;
-        _size += Q_nfa.size() * sizeof(myregex::state<idT>) + sizeof(Qnfa);
-        _size += Q_dictionary.size() * sizeof(charT) + sizeof(Dictionary);
-        _size += begin_Q_nfa.size() * sizeof(size_t) + sizeof(SQnfa);
-        _size += Q_transitions.size() * (sizeof(size_t) * 2 + sizeof(charT)) + sizeof(Transitions);
-        return _size;
-    }
     template <typename idT>
     using CompatibleNfa = myregex::basic_nfa<char, idT>;
     template <typename idT>
@@ -121,4 +109,7 @@ namespace myregex
     template <typename idT>
     using wnfa = myregex::basic_nfa<wchar_t, idT>;
 } // namespace myregex
+
+#include "nfa.tpp"
+
 #endif
