@@ -1,13 +1,13 @@
 #ifndef _TABLEDFA
 #define _TABLEDFA
 
+#include <myregex/automaton/base/state.hpp>
 //<--...
 #include <math.h>
 #include <corecrt.h>
 #include <type_traits>
 #include <iostream>
 #include <vector>
-#include <myregex/automaton/base/state.hpp>
 
 namespace myregex
 {

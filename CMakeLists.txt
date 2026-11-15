@@ -10,6 +10,8 @@ target_include_directories(myregex INTERFACE
 )
 target_compile_features(myregex INTERFACE cxx_std_17)
 
+option(BUILD_TESTS "Build tests" ON)
+
 if(BUILD_TESTS)
         enable_testing()
         add_subdirectory(test)
