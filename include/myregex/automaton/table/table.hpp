@@ -124,6 +124,7 @@ namespace myregex
     template <typename idT>
     using wtable = basic_table<wchar_t, idT>;
 } // namespace myregex
+//<--...
 
 #include "table.tpp"
 
