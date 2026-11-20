@@ -82,13 +82,13 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
             }
         }
         if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return {_M_string, __id};
+            return {std::move(_M_string), __id};
         else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             id = __id;
         iterator++;
     }
     if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-        return myregex::caption<charT, idT>(_M_string, id);
+        return myregex::caption<charT, idT>(std::move(_M_string), id);
     else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
         return myregex::caption<charT, idT>({}, {});
 }
@@ -108,7 +108,7 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
     {
         acceptance_status = status;
         if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return {_M_string, _dfa.accepted_status().at(acceptance_status)};
+            return {std::move(_M_string), _dfa.status()[acceptance_status].get()};
         else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             id = _dfa.status()[acceptance_status].get();
     }
@@ -129,7 +129,7 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
         {
             acceptance_status = status;
             if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-                return {_M_string, _dfa.accepted_status().at(acceptance_status)};
+                return {std::move(_M_string), _dfa.status()[acceptance_status].get()};
             else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
                 id = _dfa.status()[acceptance_status].get();
         }
@@ -137,7 +137,7 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
         iterator++;
     }
     if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-        return myregex::caption<charT, idT>(_M_string, id);
+        return myregex::caption<charT, idT>(std::move(_M_string), id);
     else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
         return myregex::caption<charT, idT>({}, {});
 }
@@ -149,13 +149,12 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
     idT id{};
     size_t status = 0;
     size_t acceptance_status = -1ULL;
-    acceptance_status = status;
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     if (_table.status()[status].valid())
     {
         acceptance_status = status;
         if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-            return {_M_string, _table.accepted_status().at(acceptance_status)};
+            return {std::move(_M_string), _table.status()[acceptance_status].get()};
         else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
             id = _table.status()[acceptance_status].get();
     }
@@ -175,7 +174,7 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
         {
             acceptance_status = status;
             if constexpr (option == myregex::constants::match_options::_S_first_sequence)
-                return {_M_string, _table.accepted_status().at(acceptance_status)};
+                return {std::move(_M_string), _table.status()[acceptance_status].get()};
             else if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
                 id = _table.status()[acceptance_status].get();
         }
@@ -183,7 +182,7 @@ myregex::caption<charT, idT> myregex::basic_regex<charT, idT>::match(typename st
         iterator++;
     }
     if constexpr (option == myregex::constants::match_options::_S_maximun_sequence)
-        return myregex::caption<charT, idT>(_M_string, id);
+        return myregex::caption<charT, idT>(std::move(_M_string), id);
     else if constexpr (option == myregex::constants::match_options::_S_first_sequence)
         return myregex::caption<charT, idT>({}, {});
 }
