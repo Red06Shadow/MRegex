@@ -548,7 +548,7 @@ myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(con
     nfa.Q_nfa.push_back({});
     for (auto &&expresion : list)
     {
-        std::basic_string_view<char>::const_iterator begin = expresion.second.begin();
+        typename std::basic_string_view<charT>::const_iterator begin = expresion.second.begin();
         nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(begin, expresion.second, nfa, false, expresion.first));
     }
     return nfa;
@@ -561,7 +561,7 @@ myregex::basic_nfa<charT, idT> myregex::basic_builder<charT, idT>::build_nfa(con
     nfa.Q_nfa.push_back({});
     for (auto &&expresion : list)
     {
-        std::basic_string_view<char>::const_iterator begin = expresion.second.begin();
+        typename std::basic_string_view<charT>::const_iterator begin = expresion.second.begin();
         nfa.Q_transitions[{0, -1ULL}].push_back(basic_builder<charT, idT>::_S_build_nfa_parser_or_expresions(begin, expresion.second, nfa, false, expresion.first));
     }
     return nfa;
