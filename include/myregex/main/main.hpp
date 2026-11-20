@@ -18,14 +18,14 @@ namespace myregex
         static_assert(std::is_same_v<charT, char> || std::is_same_v<charT, wchar_t>, "Error: no se permiten tipos de datos que no sean de caracteres(solo char o wchar_t)");
 
     private:
-        typename std::basic_string_view<charT> _M_string;
+        typename std::basic_string<charT> _M_string;
         idT _M_id;
 
     public:
         caption() : _M_string({}), _M_id({}) {}
-        caption(const typename std::basic_string_view<charT> &str, idT id) : _M_string(str), _M_id(id) {}
+        caption(const typename std::basic_string<charT> &str, idT id) : _M_string(str), _M_id(id) {}
         caption(const charT *begin, const charT *end, idT id) : _M_string(begin, end), _M_id(id) {}
-        inline const typename std::basic_string_view<charT> &str() const { return _M_string; }
+        inline const typename std::basic_string<charT> &str() const { return _M_string; }
         inline idT id() const { return _M_id; }
         ~caption() {}
     };
@@ -48,14 +48,16 @@ namespace myregex
         enum class search_options : unsigned char
         {
             _S_first_coincidence,
-            _S_multiple_coincidence,
+            _S_last_coincidence,
+            _S_all_coincidence,
             _S_default = _S_first_coincidence
         };
         /// @brief Opciones de remplazo
         enum class replace_options : unsigned char
         {
             _S_first_coincidence,
-            _S_multiple_coincidence,
+            _S_last_coincidence,
+            _S_all_coincidence,
             _S_default = _S_first_coincidence
         };
 
@@ -64,10 +66,12 @@ namespace myregex
         constexpr inline match_options match_maximun = match_options::_S_maximun_sequence;
 
         constexpr inline search_options search_first = search_options::_S_first_coincidence;
-        constexpr inline search_options search_maximun = search_options::_S_multiple_coincidence;
+        constexpr inline search_options search_last = search_options::_S_last_coincidence;
+        constexpr inline search_options search_all = search_options::_S_all_coincidence;
 
         constexpr inline replace_options replace_first = replace_options::_S_first_coincidence;
-        constexpr inline replace_options replace_maximun = replace_options::_S_multiple_coincidence;
+        constexpr inline replace_options replace_last = replace_options::_S_last_coincidence;
+        constexpr inline replace_options replace_all = replace_options::_S_all_coincidence;
 
     }
 
