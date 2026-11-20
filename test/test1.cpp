@@ -1,36 +1,74 @@
 // #include <gtest/gtest.h>
 #include <myregex/myregex.hpp>
+#include <iostream>
 
-int main(int argc, char const *argv[])
+int main()
 {
     try
     {
-        if (argc > 1)
+        myregex::regex<size_t> nfa_regex = myregex::builder<size_t>({
+            {1, "a+"},
+            {2, "b(c|d)"}
+        }).build();
+
+        if (!nfa_regex.verification("aaaa"))
         {
-            myregex::regex<size_t> r = myregex::builder<size_t>({
-                {1, argv[1]}
-            })
-            .convert_to_dfa()
-            .convert_to_table()
-            .build();
-            for (int i = 2; i < argc; i++)
-            {
-                auto v = r.match<myregex::constants::match_maximun>(argv[i]);
-                std::cout << v.str() << ':' << v.id() << std::endl;
-            }
-        } 
+            std::cerr << "Fallo: debería aceptarse 'aaaa' mediante NFA\n";
+            return EXIT_FAILURE;
+        }
+        if (nfa_regex.verification("bax"))
+        {
+            std::cerr << "Fallo: no debería aceptarse 'bax' mediante NFA\n";
+            return EXIT_FAILURE;
+        }
+
+        myregex::regex<size_t> dfa_regex = myregex::builder<size_t>({
+            {1, "a+"},
+            {2, "b(c|d)"}
+        }).convert_to_dfa().build();
+
+        if (!dfa_regex.verification("bc") || !dfa_regex.verification("bd"))
+        {
+            std::cerr << "Fallo: deberían aceptarse 'bc' y 'bd' mediante DFA\n";
+            return EXIT_FAILURE;
+        }
+
+        myregex::regex<size_t> table_regex = myregex::builder<size_t>({
+            {1, "a+"},
+            {2, "b(c|d)"}
+        }).convert_to_dfa().convert_to_table().build();
+
+        if (!table_regex.verification("bc") || table_regex.verification("bx"))
+        {
+            std::cerr << "Fallo inesperado en la prueba mediante tabla\n";
+            return EXIT_FAILURE;
+        }
+
+        myregex::wregex<size_t> table_wregex = myregex::wbuilder<size_t>({
+            {1, L"a+"},
+            {2, L"b(c|d)"}
+        }).convert_to_dfa().convert_to_table().build();
+
+        if (!table_wregex.verification(L"bc") || table_wregex.verification(L"bx"))
+        {
+            std::cerr << "Fallo inesperado en la prueba mediante tabla\n";
+            return EXIT_FAILURE;
+        }
+
+        std::cout << "OK: pruebas básicas de NFA, DFA y tabla\n";
+        return EXIT_SUCCESS;
     }
-    catch (const myregex::basic_lexicar_error<char> &e)
+    catch (const myregex::basic_lexicar_error<char>& error)
     {
-        e.view(std::cerr);
+        error.view(std::cerr);
     }
-    catch (const myregex::basic_analizer_error<char> &e)
+    catch (const myregex::basic_lexicar_error<wchar_t>& error)
     {
-        e.view(std::cerr);
+        error.view(std::wcerr);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& error)
     {
-        std::cerr << e.what() << '\n';
+        std::cerr << error.what() << '\n';
     }
-    return 0;
+    return EXIT_FAILURE;
 }

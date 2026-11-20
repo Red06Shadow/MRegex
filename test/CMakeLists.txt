@@ -1,21 +1,10 @@
-# include(FetchContent)
-# # 2. Declarar GoogleTest
-# FetchContent_Declare(
-#   googletest
-#   GIT_REPOSITORY https://github.com/google/googletest.git
-#   GIT_TAG v1.14.0  # Usa una versión estable
-# )
-
-# # 3. Descargar y añadir al proyecto
-# FetchContent_MakeAvailable(googletest)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/debug)
 
-add_executable(tests test1.cpp)
-target_link_libraries(tests
-    myregex
-    # gtest_main
-    # gtest
-)
-# include(GoogleTest)
-# gtest_discover_tests(tests)
+add_executable(regex_test test1.cpp)
+target_link_libraries(regex_test PRIVATE myregex)
+
+add_executable(converter_test test2.cpp)
+target_link_libraries(converter_test PRIVATE myregex)
+
+add_test(NAME regex_basic COMMAND regex_test)
+add_test(NAME converter_unicode COMMAND converter_test)
